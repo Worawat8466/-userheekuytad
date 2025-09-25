@@ -7,11 +7,11 @@ import './EmployeeManager.css';
 // Avatar removed per request
 
 const sidebarMenu = [
-  'Schedule',
-  'Routes',
-  'Person',
-  'Booking',
-  'Driver',
+  { key: 'Schedule', label: 'Schedule' },
+  { key: 'Routes', label: 'Routes' },
+  { key: 'Person', label: 'Person' },
+  { key: 'Booking', label: 'Booking' },
+  { key: 'Driver', label: 'Driver' },
 ];
 
 const initialEmployees = [
@@ -49,6 +49,7 @@ const initialEmployees = [
 
 function EmployeeManager() {
   const [activePage, setActivePage] = useState('employee');
+  const [activeMenu, setActiveMenu] = useState('Person');
   const [employees, setEmployees] = useState(initialEmployees);
   const [form, setForm] = useState({ username: '', password: '', name: '', phones: [''], email: '', position: '', department: '' });
   const [editingId, setEditingId] = useState(null);
@@ -160,6 +161,13 @@ function EmployeeManager() {
       (emp.username.includes(search) || emp.name.toLowerCase().includes(search.toLowerCase()))
   );
 
+  // ...existing code...
+  // Sidebar active menu logic
+  const getMenuTitle = () => {
+    const found = sidebarMenu.find(m => m.key === activeMenu);
+    return found ? found.label : 'Person';
+  };
+
   return (
     <div className="em-root">
       {/* Sidebar */}
@@ -171,73 +179,86 @@ function EmployeeManager() {
           <div className="em-sidebar-title">Admin Panel</div>
         </div>
         {sidebarMenu.map((menu) => (
-          <div key={menu} className={menu === 'Person' ? 'em-sidebar-menu active' : 'em-sidebar-menu'}>{menu}</div>
+          <div
+            key={menu.key}
+            className={menu.key === activeMenu ? 'em-sidebar-menu active' : 'em-sidebar-menu'}
+            style={{ color: menu.key === activeMenu ? '#FFD600' : undefined, fontWeight: menu.key === activeMenu ? 'bold' : undefined, cursor: 'pointer' }}
+            onClick={() => setActiveMenu(menu.key)}
+          >{menu.label}</div>
         ))}
       </div>
 
       {/* Main Content */}
       <div className="em-main">
-        <div className="em-title">Person</div>
-        {/* Top Buttons */}
-        <div className="em-top-btns">
-          <button onClick={() => setActivePage('employee')} className={`em-btn${activePage === 'employee' ? ' primary' : ''}`}>บุคคล</button>
-          <button onClick={() => setActivePage('department')} className={`em-btn${activePage === 'department' ? ' primary' : ''}`}>แผนก</button>
-          <button onClick={() => setActivePage('position')} className={`em-btn${activePage === 'position' ? ' primary' : ''}`}>ตำแหน่ง</button>
-          {activePage === 'employee' && (
-            <>
-              <div style={{ flex: 1 }} />
-              <button onClick={() => { setShowForm(true); setEditingId(null); setForm({ username: '', password: '', name: '', phones: [''], email: '', position: '', department: '' }); }} className="em-btn primary" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ fontSize: 20 }}>+</span> เพิ่มบุคคล
-              </button>
-              <input
-                type="text"
-                placeholder="ค้นหา"
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                className="em-search"
-              />
-              <select value={filter} onChange={e => setFilter(e.target.value)} className="em-select">
-                {positions.map(pos => <option key={pos} value={pos}>{pos}</option>)}
-              </select>
-            </>
-          )}
-        </div>
-
-        {activePage === 'employee' && (
-          <div className="em-table-wrap">
-          <table className="em-table">
-            <thead>
-                <tr>
-                  <th>Username</th>
-                  <th>ชื่อ</th>
-                  <th>แผนก</th>
-                  <th className="center">การจัดการ</th>
-                </tr>
-            </thead>
-            <tbody>
-              {filteredEmployees.map(emp => (
-                <tr key={emp.id}>
-                    <td>{emp.username}</td>
-                    <td>{emp.name}</td>
-                    <td>{emp.department || '-'}</td>
-                    <td className="center">
-                      <button className="em-action-btn" onClick={() => handleEdit(emp)}>แก้ไข</button>
-                      <button className="em-action-btn view" onClick={() => { setDetailEmp(emp); setShowDetail(true); }}>ดูข้อมูล</button>
-                      <button className="em-action-btn delete" onClick={() => handleDelete(emp.id)}>ลบ</button>
-                    </td>
-                </tr>
-              ))}
-              {filteredEmployees.length === 0 && (
-                <tr>
-                  <td colSpan={4} style={{ textAlign: 'center', padding: '24px 0', color: '#888' }}>ไม่มีข้อมูลพนักงาน</td>
-                </tr>
+        <div className="em-title">{getMenuTitle()}</div>
+        {/* Top Buttons and content only for Person */}
+        {activeMenu === 'Person' && (
+          <>
+            <div className="em-top-btns">
+              <button onClick={() => setActivePage('employee')} className={`em-btn${activePage === 'employee' ? ' primary' : ''}`}>บุคคล</button>
+              <button onClick={() => setActivePage('department')} className={`em-btn${activePage === 'department' ? ' primary' : ''}`}>แผนก</button>
+              <button onClick={() => setActivePage('position')} className={`em-btn${activePage === 'position' ? ' primary' : ''}`}>ตำแหน่ง</button>
+              {activePage === 'employee' && (
+                <>
+                  <div style={{ flex: 1 }} />
+                  <button onClick={() => { setShowForm(true); setEditingId(null); setForm({ username: '', password: '', name: '', phones: [''], email: '', position: '', department: '' }); }} className="em-btn primary" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontSize: 20 }}>+</span> เพิ่มบุคคล
+                  </button>
+                  <input
+                    type="text"
+                    placeholder="ค้นหา"
+                    value={search}
+                    onChange={e => setSearch(e.target.value)}
+                    className="em-search"
+                  />
+                  <select value={filter} onChange={e => setFilter(e.target.value)} className="em-select">
+                    {positions.map(pos => <option key={pos} value={pos}>{pos}</option>)}
+                  </select>
+                </>
               )}
-            </tbody>
-          </table>
-          </div>
+            </div>
+
+            {activePage === 'employee' && (
+              <div className="em-table-wrap">
+                <table className="em-table">
+                  <thead>
+                    <tr>
+                      <th>Username</th>
+                      <th>ชื่อ</th>
+                      <th>แผนก</th>
+                      <th className="center">การจัดการ</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredEmployees.map(emp => (
+                      <tr key={emp.id}>
+                        <td>{emp.username}</td>
+                        <td>{emp.name}</td>
+                        <td>{emp.department || '-'}</td>
+                        <td className="center">
+                          <button className="em-action-btn" onClick={() => handleEdit(emp)}>แก้ไข</button>
+                          <button className="em-action-btn view" onClick={() => { setDetailEmp(emp); setShowDetail(true); }}>ดูข้อมูล</button>
+                          <button className="em-action-btn delete" onClick={() => handleDelete(emp.id)}>ลบ</button>
+                        </td>
+                      </tr>
+                    ))}
+                    {filteredEmployees.length === 0 && (
+                      <tr>
+                        <td colSpan={4} style={{ textAlign: 'center', padding: '24px 0', color: '#888' }}>ไม่มีข้อมูลพนักงาน</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            {activePage === 'department' && <DepartmentManager />}
+            {activePage === 'position' && <PositionManager />}
+          </>
         )}
-        {activePage === 'department' && <DepartmentManager />}
-        {activePage === 'position' && <PositionManager />}
+        {/* Other menu content placeholder */}
+        {activeMenu !== 'Person' && (
+          <div style={{ padding: 32, color: '#888', fontSize: 24 }}>Coming soon: {getMenuTitle()}</div>
+        )}
 
         {/* Form Modal */}
         {showForm && (
