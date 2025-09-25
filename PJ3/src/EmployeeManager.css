@@ -1,0 +1,206 @@
+/* EmployeeManager.css */
+
+.em-root {
+  display: flex;
+  min-height: 100vh;
+  min-width: 100vw;
+  width: 100vw;
+  height: 100vh;
+  background: #181A20;
+  color: #fff;
+  font-family: sans-serif;
+  box-sizing: border-box;
+}
+
+.em-sidebar {
+  width: 180px;
+  background: #23252B;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.em-sidebar-logo {
+  background: #0A3D2E;
+  border-radius: 12px;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.em-sidebar-title {
+  font-weight: bold;
+  font-size: 16px;
+}
+
+.em-sidebar-menu {
+  color: #fff;
+  padding: 8px 0;
+  cursor: pointer;
+}
+
+.em-sidebar-menu.active {
+  color: #FFD600;
+  font-weight: bold;
+}
+
+.em-main {
+  flex: 1;
+  padding: 2vw;
+  min-width: 0;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+}
+
+.em-title {
+  font-size: 24px;
+  font-weight: bold;
+  margin-bottom: 16px;
+}
+
+.em-top-btns {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.em-btn {
+  background: #23252B;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 24px;
+  font-weight: bold;
+}
+
+.em-btn.primary {
+  background: #0A3D2E;
+}
+
+.em-search {
+  background: #23252B;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 16px;
+  width: 180px;
+}
+
+.em-select {
+  background: #23252B;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 16px;
+}
+
+.em-table-wrap {
+  background: #23252B;
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.em-table {
+  width: 100%;
+  border-collapse: collapse;
+  color: #fff;
+}
+
+.em-table th {
+  text-align: left;
+  padding: 0 16px;
+  background: #23252B;
+  height: 48px;
+}
+
+.em-table td {
+  padding: 0 16px;
+  border-bottom: 1px solid #333;
+  height: 44px;
+}
+
+.em-table td.center {
+  text-align: center;
+}
+
+.em-action-btn {
+  background: #0A3D2E;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 4px 16px;
+  margin-right: 8px;
+}
+
+.em-action-btn.view {
+  background: #888;
+}
+
+.em-action-btn.delete {
+  background: #23252B;
+  color: #FFD600;
+}
+
+.em-modal-bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+
+.em-modal {
+  background: #23252B;
+  padding: 32px;
+  border-radius: 16px;
+  min-width: 320px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.em-modal-title {
+  font-size: 20px;
+  font-weight: bold;
+  margin-bottom: 8px;
+}
+
+.em-modal-input,
+.em-modal-select {
+  background: #181A20;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 16px;
+}
+
+.em-modal-btns {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.em-modal-btn {
+  background: #0A3D2E;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 24px;
+  font-weight: bold;
+}
+
+.em-modal-btn.cancel {
+  background: #888;
+}
