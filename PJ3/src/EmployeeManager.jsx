@@ -83,7 +83,7 @@ function EmployeeManager() {
       <div className="em-sidebar">
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 32 }}>
           <div className="em-sidebar-logo">
-            <span role="img" aria-label="bus" style={{ fontSize: 24 }}>🚌</span>
+            <img src="/logo.png" alt="logo" className="em-logo-img" />
           </div>
           <div className="em-sidebar-title">Admin Panel</div>
         </div>
