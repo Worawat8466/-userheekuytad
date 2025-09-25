@@ -121,19 +121,40 @@
 
 .em-table th {
   text-align: left;
-  padding: 0 16px;
+  padding: 12px 16px;
   background: #23252B;
-  height: 48px;
+  height: 56px;
+  font-weight: 600;
+  font-size: 14px;
 }
 
 .em-table td {
-  padding: 0 16px;
-  border-bottom: 1px solid #333;
-  height: 44px;
+  padding: 12px 16px;
+  border-bottom: 1px solid #2b2d31;
+  height: 56px;
+  vertical-align: middle;
+  font-size: 14px;
 }
+
+.em-table tbody tr:hover {
+  background: rgba(255,255,255,0.02);
+}
+
+.em-table th.username { width: 140px; }
+.em-table th.name { width: 180px; }
+.em-table th.phones { width: 180px; }
+.em-table th.email { width: 220px; }
+.em-table th.position { width: 140px; }
+.em-table th.department { width: 160px; }
+.em-table th.center { width: 160px; text-align: center; }
 
 .em-table td.center {
   text-align: center;
+  vertical-align: middle;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
 }
 
 .em-action-btn {
@@ -141,8 +162,10 @@
   color: #fff;
   border: none;
   border-radius: 8px;
-  padding: 4px 16px;
+  padding: 6px 12px;
   margin-right: 8px;
+  cursor: pointer;
+  white-space: nowrap;
 }
 
 .em-action-btn.view {
@@ -150,8 +173,9 @@
 }
 
 .em-action-btn.delete {
-  background: #23252B;
+  background: transparent;
   color: #FFD600;
+  border: 1px solid rgba(255,214,0,0.18);
 }
 
 .em-modal-bg {
@@ -175,6 +199,35 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
+}
+
+.em-modal--wide {
+  min-width: 720px;
+}
+
+.em-modal-grid {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 20px;
+  align-items: start;
+}
+
+.em-modal-col {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.em-input-label {
+  font-size: 12px;
+  color: #ccc;
+  margin-bottom: 6px;
+}
+
+.em-error {
+  color: #ff6b6b;
+  font-size: 12px;
+  margin-top: 6px;
 }
 
 .em-modal-title {
