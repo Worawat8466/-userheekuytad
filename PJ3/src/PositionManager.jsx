@@ -73,9 +73,9 @@ function PositionManager() {
         <tbody>
           {positions.map(pos => (
             <tr key={pos.id}>
-              <td className="center">{pos.id}</td>
+              <td style={{textAlign:'center'}}>{pos.id}</td>
               <td className="center">{pos.name}</td>
-              <td className="center">{pos.departmentId}</td>
+              <td style={{textAlign:'center'}}>{pos.departmentId}</td>
               <td>{pos.permissions.join(', ')}</td>
               <td className="center" style={{display:'flex',justifyContent:'center',alignItems:'center',gap:8}}>
                 <button className="em-action-btn" style={{whiteSpace:'nowrap'}} onClick={() => handleEdit(pos)}>แก้ไข</button>

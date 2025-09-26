@@ -54,7 +54,7 @@ function DepartmentManager() {
         <tbody>
           {departments.map(dep => (
             <tr key={dep.id}>
-              <td className="center">{dep.id}</td>
+              <td style={{textAlign:'center'}}>{dep.id}</td>
               <td className="center">{dep.name}</td>
               <td className="center" style={{display:'flex',justifyContent:'center',alignItems:'center',gap:8}}>
                 <button className="em-action-btn" style={{whiteSpace:'nowrap'}} onClick={() => handleEdit(dep)}>แก้ไข</button>
