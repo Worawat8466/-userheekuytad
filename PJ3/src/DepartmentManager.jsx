@@ -9,26 +9,29 @@ const initialDepartments = [
 
 function DepartmentManager() {
   const [departments, setDepartments] = useState(initialDepartments);
-  const [form, setForm] = useState({ name: '' });
+  const [form, setForm] = useState({ id: '', name: '' });
   const [editingId, setEditingId] = useState(null);
 
   const handleAdd = (e) => {
     e.preventDefault();
     if (!form.name.trim()) return;
-    setDepartments([...departments, { id: Date.now(), name: form.name }]);
-    setForm({ name: '' });
+    const newId = form.id ? parseInt(form.id) : Date.now();
+    setDepartments([...departments, { id: newId, name: form.name }]);
+    setForm({ id: '', name: '' });
+    setEditingId(null);
   };
 
   const handleEdit = (dep) => {
     setEditingId(dep.id);
-    setForm({ name: dep.name });
+    setForm({ id: dep.id, name: dep.name });
   };
 
   const handleUpdate = (e) => {
     e.preventDefault();
-    setDepartments(departments.map(dep => dep.id === editingId ? { ...dep, name: form.name } : dep));
+    const updatedId = form.id ? parseInt(form.id) : editingId;
+    setDepartments(departments.map(dep => dep.id === editingId ? { ...dep, id: updatedId, name: form.name } : dep));
     setEditingId(null);
-    setForm({ name: '' });
+    setForm({ id: '', name: '' });
   };
 
   const handleDelete = (id) => {
@@ -39,11 +42,34 @@ function DepartmentManager() {
   return (
     <div className="dm-container">
       <h2 className="dm-title">แผนก</h2>
-      <form onSubmit={editingId ? handleUpdate : handleAdd} className="dm-form">
-        <input value={form.name} onChange={e => setForm({ name: e.target.value })} placeholder="ชื่อแผนก" className="dm-input" />
-        <button type="submit" className="dm-btn">{editingId ? 'บันทึก' : 'เพิ่ม'}</button>
-        {editingId && <button type="button" onClick={() => { setEditingId(null); setForm({ name: '' }); }} className="dm-btn cancel">ยกเลิก</button>}
-      </form>
+      
+      {/* Add button */}
+      {!editingId && (
+        <div style={{ marginBottom: 16 }}>
+          <button type="button" className="dm-btn" onClick={() => setEditingId('new')}>
+            + เพิ่มแผนก
+          </button>
+        </div>
+      )}
+
+      {/* Form for adding/editing */}
+      {(editingId === 'new' || editingId) && (
+        <form onSubmit={editingId === 'new' ? handleAdd : handleUpdate} className="dm-form" style={{ marginBottom: 24, padding: 16, background: '#2a2c32', borderRadius: 8 }}>
+          <div style={{ marginBottom: 12 }}>
+            <label style={{ color: '#ccc', fontSize: 12, marginBottom: 6, display: 'block' }}>ID (ถ้าไม่ระบุจะ auto generate)</label>
+            <input value={form.id} onChange={e => setForm({ ...form, id: e.target.value })} placeholder="ID" className="dm-input" style={{ width: '100px' }} type="number" />
+          </div>
+          <div style={{ marginBottom: 12 }}>
+            <label style={{ color: '#ccc', fontSize: 12, marginBottom: 6, display: 'block' }}>ชื่อแผนก</label>
+            <input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="ชื่อแผนก" className="dm-input" style={{ width: '300px' }} />
+          </div>
+          <div>
+            <button type="submit" className="dm-btn">{editingId === 'new' ? 'เพิ่ม' : 'บันทึก'}</button>
+            <button type="button" onClick={() => { setEditingId(null); setForm({ id: '', name: '' }); }} className="dm-btn cancel">ยกเลิก</button>
+          </div>
+        </form>
+      )}
+
       <table className="dm-table">
         <thead>
           <tr>
