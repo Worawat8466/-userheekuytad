@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import './PositionManager.css';
 
 const initialPositions = [
   { id: 1, name: 'หัวหน้า', departmentId: 1, permissions: ['ดู', 'เพิ่ม', 'แก้ไข', 'ลบ'] },
@@ -47,20 +48,20 @@ function PositionManager() {
   };
 
   return (
-    <div style={{ padding: 32 }}>
-      <h2>ตำแหน่ง</h2>
-      <form onSubmit={editingId ? handleUpdate : handleAdd} style={{ marginBottom: 16 }}>
-        <input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="ชื่อตำแหน่ง" style={{ padding: 8, borderRadius: 8, marginRight: 8 }} />
-        <span style={{ marginRight: 8 }}>สิทธิ์:</span>
+    <div className="pm-container">
+      <h2 className="pm-title">ตำแหน่ง</h2>
+      <form onSubmit={editingId ? handleUpdate : handleAdd} className="pm-form">
+        <input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="ชื่อตำแหน่ง" className="pm-input" />
+        <span className="pm-permissions-label">สิทธิ์:</span>
         {allPermissions.map(perm => (
-          <label key={perm} style={{ marginRight: 8 }}>
+          <label key={perm} className="pm-permission-item">
             <input type="checkbox" checked={form.permissions.includes(perm)} onChange={() => togglePermission(perm)} /> {perm}
           </label>
         ))}
-        <button type="submit">{editingId ? 'บันทึก' : 'เพิ่ม'}</button>
-        {editingId && <button type="button" onClick={() => { setEditingId(null); setForm({ name: '', permissions: [] }); }}>ยกเลิก</button>}
+        <button type="submit" className="pm-btn">{editingId ? 'บันทึก' : 'เพิ่ม'}</button>
+        {editingId && <button type="button" onClick={() => { setEditingId(null); setForm({ name: '', permissions: [] }); }} className="pm-btn cancel">ยกเลิก</button>}
       </form>
-      <table style={{ width: '100%', background: '#23252B', color: '#fff', borderRadius: 8 }}>
+      <table className="pm-table">
         <thead>
           <tr>
             <th className="center">ID</th>
@@ -74,12 +75,12 @@ function PositionManager() {
           {positions.map(pos => (
             <tr key={pos.id}>
               <td style={{textAlign:'center'}}>{pos.id}</td>
-              <td className="center">{pos.name}</td>
+              <td style={{textAlign:'center'}}>{pos.name}</td>
               <td style={{textAlign:'center'}}>{pos.departmentId}</td>
               <td>{pos.permissions.join(', ')}</td>
-              <td className="center" style={{display:'flex',justifyContent:'center',alignItems:'center',gap:8}}>
-                <button className="em-action-btn" style={{whiteSpace:'nowrap'}} onClick={() => handleEdit(pos)}>แก้ไข</button>
-                <button className="em-action-btn delete" style={{whiteSpace:'nowrap'}} onClick={() => handleDelete(pos.id)}>ลบ</button>
+              <td className="pm-action-cell">
+                <button className="pm-action-btn" onClick={() => handleEdit(pos)}>แก้ไข</button>
+                <button className="pm-action-btn delete" onClick={() => handleDelete(pos.id)}>ลบ</button>
               </td>
             </tr>
           ))}

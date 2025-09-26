@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import './DepartmentManager.css';
 
 const initialDepartments = [
   { id: 1, name: 'ฝ่ายปฏิบัติการ' },
@@ -36,29 +37,29 @@ function DepartmentManager() {
   };
 
   return (
-    <div style={{ padding: 32 }}>
-      <h2>แผนก</h2>
-      <form onSubmit={editingId ? handleUpdate : handleAdd} style={{ marginBottom: 16 }}>
-        <input value={form.name} onChange={e => setForm({ name: e.target.value })} placeholder="ชื่อแผนก" style={{ padding: 8, borderRadius: 8, marginRight: 8 }} />
-        <button type="submit">{editingId ? 'บันทึก' : 'เพิ่ม'}</button>
-        {editingId && <button type="button" onClick={() => { setEditingId(null); setForm({ name: '' }); }}>ยกเลิก</button>}
+    <div className="dm-container">
+      <h2 className="dm-title">แผนก</h2>
+      <form onSubmit={editingId ? handleUpdate : handleAdd} className="dm-form">
+        <input value={form.name} onChange={e => setForm({ name: e.target.value })} placeholder="ชื่อแผนก" className="dm-input" />
+        <button type="submit" className="dm-btn">{editingId ? 'บันทึก' : 'เพิ่ม'}</button>
+        {editingId && <button type="button" onClick={() => { setEditingId(null); setForm({ name: '' }); }} className="dm-btn cancel">ยกเลิก</button>}
       </form>
-      <table style={{ width: '100%', background: '#23252B', color: '#fff', borderRadius: 8 }}>
+      <table className="dm-table">
         <thead>
           <tr>
-            <th className="center">ID</th>
-            <th className="center">ชื่อแผนก</th>
-            <th className="center">การจัดการ</th>
+            <th>ID</th>
+            <th>ชื่อแผนก</th>
+            <th>การจัดการ</th>
           </tr>
         </thead>
         <tbody>
           {departments.map(dep => (
             <tr key={dep.id}>
               <td style={{textAlign:'center'}}>{dep.id}</td>
-              <td className="center">{dep.name}</td>
-              <td className="center" style={{display:'flex',justifyContent:'center',alignItems:'center',gap:8}}>
-                <button className="em-action-btn" style={{whiteSpace:'nowrap'}} onClick={() => handleEdit(dep)}>แก้ไข</button>
-                <button className="em-action-btn delete" style={{whiteSpace:'nowrap'}} onClick={() => handleDelete(dep.id)}>ลบ</button>
+              <td style={{textAlign:'center'}}>{dep.name}</td>
+              <td className="dm-action-cell">
+                <button className="dm-action-btn" onClick={() => handleEdit(dep)}>แก้ไข</button>
+                <button className="dm-action-btn delete" onClick={() => handleDelete(dep.id)}>ลบ</button>
               </td>
             </tr>
           ))}

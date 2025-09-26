@@ -1,0 +1,89 @@
+/* DepartmentManager.css */
+
+.dm-container {
+  padding: 32px;
+}
+
+.dm-title {
+  color: #fff;
+  margin-bottom: 16px;
+}
+
+.dm-form {
+  margin-bottom: 16px;
+}
+
+.dm-input {
+  padding: 8px;
+  border-radius: 8px;
+  margin-right: 8px;
+  background: #23252B;
+  color: #fff;
+  border: 1px solid #444;
+}
+
+.dm-btn {
+  background: #0A3D2E;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  cursor: pointer;
+  margin-right: 8px;
+}
+
+.dm-btn.cancel {
+  background: #888;
+}
+
+.dm-table {
+  width: 100%;
+  background: #23252B;
+  color: #fff;
+  border-radius: 8px;
+  border-collapse: collapse;
+}
+
+.dm-table th {
+  text-align: center;
+  padding: 12px 16px;
+  background: #23252B;
+  height: 56px;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.dm-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid #2b2d31;
+  height: 56px;
+  vertical-align: middle;
+  font-size: 14px;
+}
+
+.dm-table tbody tr:hover {
+  background: rgba(255,255,255,0.02);
+}
+
+.dm-action-cell {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+}
+
+.dm-action-btn {
+  background: #0A3D2E;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 6px 12px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.dm-action-btn.delete {
+  background: transparent;
+  color: #FFD600;
+  border: 1px solid rgba(255,214,0,0.18);
+}

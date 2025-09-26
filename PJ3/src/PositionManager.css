@@ -1,0 +1,102 @@
+/* PositionManager.css */
+
+.pm-container {
+  padding: 32px;
+}
+
+.pm-title {
+  color: #fff;
+  margin-bottom: 16px;
+}
+
+.pm-form {
+  margin-bottom: 16px;
+}
+
+.pm-input {
+  padding: 8px;
+  border-radius: 8px;
+  margin-right: 8px;
+  background: #23252B;
+  color: #fff;
+  border: 1px solid #444;
+}
+
+.pm-permissions-label {
+  margin-right: 8px;
+  color: #fff;
+}
+
+.pm-permission-item {
+  margin-right: 8px;
+  color: #fff;
+}
+
+.pm-btn {
+  background: #0A3D2E;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  cursor: pointer;
+  margin-right: 8px;
+}
+
+.pm-btn.cancel {
+  background: #888;
+}
+
+.pm-table {
+  width: 100%;
+  background: #23252B;
+  color: #fff;
+  border-radius: 8px;
+  border-collapse: collapse;
+}
+
+.pm-table th {
+  padding: 12px 16px;
+  background: #23252B;
+  height: 56px;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.pm-table th.center {
+  text-align: center;
+}
+
+.pm-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid #2b2d31;
+  height: 56px;
+  vertical-align: middle;
+  font-size: 14px;
+}
+
+.pm-table tbody tr:hover {
+  background: rgba(255,255,255,0.02);
+}
+
+.pm-action-cell {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+}
+
+.pm-action-btn {
+  background: #0A3D2E;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 6px 12px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.pm-action-btn.delete {
+  background: transparent;
+  color: #FFD600;
+  border: 1px solid rgba(255,214,0,0.18);
+}
