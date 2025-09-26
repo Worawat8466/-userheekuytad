@@ -1,5 +1,5 @@
 
-import EmployeeManager from './EmployeeManager';
+import EmployeeManager from './components/EmployeeManager';
 
 function App() {
   return <EmployeeManager />;
