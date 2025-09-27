@@ -2,20 +2,11 @@
 
 // === การ Import ===
 import React, { useState } from 'react';
-import DepartmentManager from './DepartmentManager';
-import PositionManager from './PositionManager';
-import './EmployeeManager.css';
-import logoImg from '../images/logo.png';
+import DepartmentManager from '../components/DepartmentManager';
+import PositionManager from '../components/PositionManager';
+import './PersonPage.css';
 
 // === ข้อมูลคงที่ ===
-// เมนูด้านซ้าย
-const sidebarMenu = [
-  { key: 'Schedule', label: 'Schedule' },
-  { key: 'Routes', label: 'Routes' },
-  { key: 'Person', label: 'Person' },
-  { key: 'Booking', label: 'Booking' },
-  { key: 'Driver', label: 'Driver' },
-];
 
 const initialEmployees = [
   {
@@ -50,10 +41,9 @@ const initialEmployees = [
   },
 ];
 
-function EmployeeManager() {
+function PersonPage() {
   // === State สำหรับการนำทาง ===
   const [activePage, setActivePage] = useState('employee'); // หน้าปัจจุบัน (employee/department/position)
-  const [activeMenu, setActiveMenu] = useState('Person');   // เมนูที่เลือกในเมนูซ้าย
 
   // === State สำหรับข้อมูลพนักงาน ===
   const [employees, setEmployees] = useState(initialEmployees); // รายการพนักงานทั้งหมด
@@ -71,6 +61,10 @@ function EmployeeManager() {
   const [showForm, setShowForm] = useState(false);     // แสดงฟอร์มเพิ่ม/แก้ไข
   const [showDetail, setShowDetail] = useState(false); // แสดงรายละเอียดพนักงาน
   const [detailEmp, setDetailEmp] = useState(null);    // ข้อมูลพนักงานที่แสดงรายละเอียด
+
+  // === State สำหรับ UX ===
+  const [loading, setLoading] = useState(false);       // สถานะโหลด
+  const [toast, setToast] = useState(null);            // ข้อความแจ้งเตือน
 
   // === ข้อมูลตายตัว ===
   const positions = ['All', 'Admin', 'Manager', 'Staff'];  // ตำแหน่งทั้งหมด
@@ -149,10 +143,21 @@ function EmployeeManager() {
     return Object.values(errors).every(v => !v);
   };
 
-  const handleAdd = (e) => {
+  // === ฟังก์ชัน Toast Notification ===
+  const showToast = (message, type = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3000);
+  };
+
+  const handleAdd = async (e) => {
     e.preventDefault();
     if (!form.username || !form.name || !form.position || !form.email || !form.department) return;
     if (!validateForm()) return;
+    
+    setLoading(true);
+    // จำลองการโหลด
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
     setEmployees([
       ...employees,
       {
@@ -168,6 +173,8 @@ function EmployeeManager() {
     ]);
     setForm({ username: '', password: '', name: '', phones: [''], email: '', position: '', department: '' });
     setShowForm(false);
+    setLoading(false);
+    showToast('เพิ่มพนักงานเรียบร้อยแล้ว');
   };
 
   const handleEdit = (emp) => {
@@ -176,9 +183,13 @@ function EmployeeManager() {
     setShowForm(true);
   };
 
-  const handleUpdate = (e) => {
+  const handleUpdate = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
+    
+    setLoading(true);
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
     setEmployees(
       employees.map((emp) =>
         emp.id === editingId
@@ -189,11 +200,14 @@ function EmployeeManager() {
     setEditingId(null);
     setForm({ username: '', password: '', name: '', phones: [''], email: '', position: '', department: '' });
     setShowForm(false);
+    setLoading(false);
+    showToast('แก้ไขข้อมูลเรียบร้อยแล้ว');
   };
 
   const handleDelete = (id) => {
     if (!window.confirm('ยืนยันการลบพนักงานนี้?')) return;
     setEmployees(employees.filter((emp) => emp.id !== id));
+    showToast('ลบข้อมูลเรียบร้อยแล้ว');
   };
 
   // exportCSV removed per request
@@ -204,48 +218,20 @@ function EmployeeManager() {
       (emp.username.includes(search) || emp.name.toLowerCase().includes(search.toLowerCase()))
   );
 
-  // ...existing code...
-  // Sidebar active menu logic
-  const getMenuTitle = () => {
-    const found = sidebarMenu.find(m => m.key === activeMenu);
-    return found ? found.label : 'Person';
-  };
+
 
   return (
-    <div className="em-root">
-      {/* Sidebar */}
-      <div className="em-sidebar">
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 32 }}>
-          <div className="em-sidebar-logo">
-            <img src={logoImg} alt="logo" className="em-logo-img" />
-          </div>
-          <div className="em-sidebar-title">Admin Panel</div>
-        </div>
-        {sidebarMenu.map((menu) => (
-          <div
-            key={menu.key}
-            className={menu.key === activeMenu ? 'em-sidebar-menu active' : 'em-sidebar-menu'}
-            style={{ color: menu.key === activeMenu ? '#FFD600' : undefined, fontWeight: menu.key === activeMenu ? 'bold' : undefined, cursor: 'pointer' }}
-            onClick={() => setActiveMenu(menu.key)}
-          >{menu.label}</div>
-        ))}
-      </div>
-
-      {/* Main Content */}
-      <div className="em-main">
-        <div className="em-title">{getMenuTitle()}</div>
-        {/* Top Buttons and content only for Person */}
-        {activeMenu === 'Person' && (
-          <>
-            <div className="em-top-btns">
-              <button onClick={() => setActivePage('employee')} className={`em-btn${activePage === 'employee' ? ' primary' : ''}`}>บุคคล</button>
-              <button onClick={() => setActivePage('department')} className={`em-btn${activePage === 'department' ? ' primary' : ''}`}>แผนก</button>
-              <button onClick={() => setActivePage('position')} className={`em-btn${activePage === 'position' ? ' primary' : ''}`}>ตำแหน่ง</button>
+    <>
+      {/* Top Buttons and content */}
+      <div className="em-top-btns">
+              <button onClick={() => setActivePage('employee')} className={`em-btn${activePage === 'employee' ? ' primary' : ''}`}>Person</button>
+              <button onClick={() => setActivePage('department')} className={`em-btn${activePage === 'department' ? ' primary' : ''}`}>Department</button>
+              <button onClick={() => setActivePage('position')} className={`em-btn${activePage === 'position' ? ' primary' : ''}`}>Position</button>
               {activePage === 'employee' && (
                 <>
                   <div style={{ flex: 1 }} />
                   <button onClick={() => { setShowForm(true); setEditingId(null); setForm({ username: '', password: '', name: '', phones: [''], email: '', position: '', department: '' }); }} className="em-btn primary" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ fontSize: 20 }}>+</span> เพิ่มบุคคล
+                    <span style={{ fontSize: 20 }}>+</span> Add Person
                   </button>
                   <input
                     type="text"
@@ -254,14 +240,14 @@ function EmployeeManager() {
                     onChange={e => setSearch(e.target.value)}
                     className="em-search"
                   />
-                  <select value={filter} onChange={e => setFilter(e.target.value)} className="em-select">
-                    {positions.map(pos => <option key={pos} value={pos}>{pos}</option>)}
-                  </select>
-                </>
-              )}
-            </div>
+          <select value={filter} onChange={e => setFilter(e.target.value)} className="em-select">
+            {positions.map(pos => <option key={pos} value={pos}>{pos}</option>)}
+          </select>
+        </>
+      )}
+      </div>
 
-            {activePage === 'employee' && (
+      {activePage === 'employee' && (
               <div className="em-table-wrap">
                 <table className="em-table">
                   <thead>
@@ -287,21 +273,21 @@ function EmployeeManager() {
                     ))}
                     {filteredEmployees.length === 0 && (
                       <tr>
-                        <td colSpan={4} style={{ textAlign: 'center', padding: '24px 0', color: '#888' }}>ไม่มีข้อมูลพนักงาน</td>
+                        <td colSpan={4}>
+                          <div className="em-empty-state">
+                            <h3>ไม่พบข้อมูลพนักงาน</h3>
+                            <p>ลองปรับเปลี่ยนคำค้นหาหรือตัวกรอง หรือเพิ่มพนักงานใหม่</p>
+                          </div>
+                        </td>
                       </tr>
                     )}
                   </tbody>
                 </table>
               </div>
             )}
-            {activePage === 'department' && <DepartmentManager />}
-            {activePage === 'position' && <PositionManager />}
-          </>
-        )}
-        {/* Other menu content placeholder */}
-        {activeMenu !== 'Person' && (
-          <div style={{ padding: 32, color: '#888', fontSize: 24 }}>Coming soon: {getMenuTitle()}</div>
-        )}
+
+      {activePage === 'department' && <DepartmentManager />}
+      {activePage === 'position' && <PositionManager />}
 
         {/* Form Modal */}
         {showForm && (
@@ -353,8 +339,17 @@ function EmployeeManager() {
               </div>
 
               <div className="em-modal-btns">
-                <button type="submit" className="em-modal-btn">{editingId ? 'บันทึก' : 'เพิ่ม'}</button>
-                <button type="button" onClick={() => { setShowForm(false); setEditingId(null); setForm({ username: '', password: '', name: '', phones: [''], email: '', position: '', department: '' }); }} className="em-modal-btn cancel">ยกเลิก</button>
+                <button type="submit" className="em-modal-btn" disabled={loading}>
+                  {loading ? (
+                    <>
+                      <span className="em-loading"></span>
+                      {editingId ? 'กำลังบันทึก...' : 'กำลังเพิ่ม...'}
+                    </>
+                  ) : (
+                    editingId ? 'บันทึก' : 'เพิ่ม'
+                  )}
+                </button>
+                <button type="button" onClick={() => { setShowForm(false); setEditingId(null); setForm({ username: '', password: '', name: '', phones: [''], email: '', position: '', department: '' }); }} className="em-modal-btn cancel" disabled={loading}>ยกเลิก</button>
               </div>
             </form>
           </div>
@@ -384,9 +379,15 @@ function EmployeeManager() {
             </div>
           </div>
         )}
-      </div>
-    </div>
+
+        {/* Toast Notification */}
+        {toast && (
+          <div className={`em-toast ${toast.type}`}>
+            {toast.message}
+          </div>
+        )}
+    </>
   );
 }
 
-export default EmployeeManager;
+export default PersonPage;
