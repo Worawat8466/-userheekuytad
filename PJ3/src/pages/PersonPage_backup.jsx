@@ -126,7 +126,7 @@ function PersonPage() {
     isActive: 1
   });
   const [editingId, setEditingId] = useState(null);
-    id: '',
+
   // === SEARCH & FILTER STATE ===
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('All');
