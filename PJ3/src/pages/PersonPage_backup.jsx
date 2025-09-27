@@ -159,70 +159,9 @@ function PersonPage() {
     return department ? department.name : 'ไม่ระบุ';
   };
 
-  const getSystemPermissionText = (systemPermis) => {
-    return systemPermis === 'A' ? 'ผู้ดูแลระบบ (Admin)' : 'ผู้ใช้งาน (User)';
-  };
-
-  const generatePersonId = () => {
-    const maxId = Math.max(...employees.map(emp => parseInt(emp.personId.substring(1))));
-    const nextId = maxId + 1;
-    return 'P' + nextId.toString().padStart(9, '0');
-  };
-
   // === FORM HANDLERS ===
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
-  };
-
-  const handlePhoneChange = (index, value) => {
-    const phones = [...form.phones];
-    phones[index] = value;
-    setForm({ ...form, phones });
-  };
-
-  const addPhone = () => {
-    setForm({ ...form, phones: [...form.phones, ''] });
-  };
-
-  const removePhone = (index) => {
-    const phones = form.phones.filter((_, i) => i !== index);
-    setForm({ ...form, phones: phones.length ? phones : [''] });
-  };
-
-  // === VALIDATION FUNCTIONS ===
-  const validateEmail = (email) => {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-  };
-
-  const validatePhone = (phone) => {
-    const digits = (phone || '').replace(/[^0-9]/g, '');
-    return digits.length >= 7;
-  };
-
-  const validateForm = () => {
-    const errors = { 
-      name: '', username: '', password: '', 
-      positionId: '', departmentId: '' 
-    };
-    
-    if (!form.name || form.name.trim() === '') {
-      errors.name = 'โปรดระบุชื่อ';
-    }
-    if (!form.username || form.username.trim().length < 3) {
-      errors.username = 'โปรดระบุ Username อย่างน้อย 3 ตัวอักษร';
-    }
-    if (!form.password || form.password.length < 6) {
-      errors.password = 'รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร';
-    }
-    if (!form.positionId) {
-      errors.positionId = 'โปรดเลือกตำแหน่ง';
-    }
-    if (!form.departmentId) {
-      errors.departmentId = 'โปรดเลือกแผนก';
-    }
-    
-    setFormErrors(errors);
-    return Object.values(errors).every(v => !v);
   };
 
   // === UTILITY FUNCTIONS ===
@@ -234,122 +173,116 @@ function PersonPage() {
   // === CRUD OPERATIONS ===
   const handleAdd = async (e) => {
     e.preventDefault();
-    if (!form.name || !form.username || !form.password || !form.positionId || !form.departmentId) return;
-    if (!validateForm()) return;
+    if (!form.name || !form.username || !form.rankId || !form.departmentId) return;
     
     setLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    const newPersonId = Date.now();
-    const newAuthId = Date.now() + 1;
-    
-    // เพิ่มข้อมูลบุคคล
-    const newEmployee = {
-      id: newPersonId,
-      name: form.name,
-      positionId: parseInt(form.positionId),
-      departmentId: parseInt(form.departmentId),
-      authenticationId: newAuthId,
-    };
-    
-    // เพิ่มข้อมูลการอนุญาตใช้งาน
-    const newAuth = {
-      id: newAuthId,
-      username: form.username,
-      password: form.password,
-      personId: newPersonId,
-    };
-    
-    setEmployees([...employees, newEmployee]);
-    setAuthentications([...authentications, newAuth]);
-    
-    setForm({ id: '', name: '', positionId: '', departmentId: '', username: '', password: '' });
-    setShowForm(false);
-    setLoading(false);
-    showToast('เพิ่มพนักงานเรียบร้อยแล้ว');
+    try {
+      const response = await fetch('http://localhost:3001/api/persons', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: form.name,
+          username: form.username,
+          rankId: parseInt(form.rankId),
+          departmentId: parseInt(form.departmentId)
+        }),
+      });
+      
+      if (response.ok) {
+        await fetchPersons();
+        setForm({ id: '', name: '', rankId: '', departmentId: '', username: '' });
+        setShowForm(false);
+        showToast('เพิ่มพนักงานเรียบร้อยแล้ว');
+      } else {
+        showToast('เกิดข้อผิดพลาดในการเพิ่มข้อมูล');
+      }
+    } catch (error) {
+      console.error('Error adding person:', error);
+      showToast('เกิดข้อผิดพลาดในการเพิ่มข้อมูล');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleEdit = (emp) => {
-    setEditingId(emp.id);
-    const auth = getAuthentication(emp.authenticationId);
+  const handleEdit = (person) => {
+    setEditingId(person.personId || person.id);
     setForm({ 
-      id: emp.id,
-      name: emp.name || '', 
-      positionId: emp.positionId || '', 
-      departmentId: emp.departmentId || '',
-      username: auth ? auth.username : '',
-      password: auth ? auth.password : ''
+      id: person.personId || person.id,
+      name: person.name || '', 
+      rankId: person.rankId || '', 
+      departmentId: person.departmentId || '',
+      username: person.username || ''
     });
     setShowForm(true);
   };
 
   const handleUpdate = async (e) => {
     e.preventDefault();
-    if (!validateForm()) return;
+    if (!form.name || !form.username || !form.rankId || !form.departmentId) return;
     
     setLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    // อัปเดตข้อมูลบุคคล
-    setEmployees(employees.map((emp) =>
-      emp.id === editingId
-        ? { 
-            ...emp, 
-            name: form.name,
-            positionId: parseInt(form.positionId),
-            departmentId: parseInt(form.departmentId)
-          }
-        : emp
-    ));
-    
-    // อัปเดตข้อมูลการอนุญาตใช้งาน
-    const currentEmp = employees.find(emp => emp.id === editingId);
-    if (currentEmp) {
-      setAuthentications(authentications.map((auth) =>
-        auth.id === currentEmp.authenticationId
-          ? {
-              ...auth,
-              username: form.username,
-              password: form.password
-            }
-          : auth
-      ));
+    try {
+      const response = await fetch(`http://localhost:3001/api/persons/${editingId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: form.name,
+          username: form.username,
+          rankId: parseInt(form.rankId),
+          departmentId: parseInt(form.departmentId)
+        }),
+      });
+      
+      if (response.ok) {
+        await fetchPersons();
+        setEditingId(null);
+        setForm({ id: '', name: '', rankId: '', departmentId: '', username: '' });
+        setShowForm(false);
+        showToast('แก้ไขข้อมูลเรียบร้อยแล้ว');
+      } else {
+        showToast('เกิดข้อผิดพลาดในการแก้ไขข้อมูล');
+      }
+    } catch (error) {
+      console.error('Error updating person:', error);
+      showToast('เกิดข้อผิดพลาดในการแก้ไขข้อมูล');
+    } finally {
+      setLoading(false);
     }
-    
-    setEditingId(null);
-    setForm({ id: '', name: '', positionId: '', departmentId: '', username: '', password: '' });
-    setShowForm(false);
-    setLoading(false);
-    showToast('แก้ไขข้อมูลเรียบร้อยแล้ว');
   };
 
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     if (!window.confirm('ยืนยันการลบพนักงานนี้?')) return;
     
-    // หาข้อมูลการอนุญาตที่เกี่ยวข้อง
-    const empToDelete = employees.find(emp => emp.id === id);
-    
-    // ลบข้อมูลบุคคล
-    setEmployees(employees.filter((emp) => emp.id !== id));
-    
-    // ลบข้อมูลการอนุญาตที่เกี่ยวข้อง
-    if (empToDelete) {
-      setAuthentications(authentications.filter(auth => auth.id !== empToDelete.authenticationId));
+    try {
+      const response = await fetch(`http://localhost:3001/api/persons/${id}`, {
+        method: 'DELETE',
+      });
+      
+      if (response.ok) {
+        await fetchPersons();
+        showToast('ลบข้อมูลเรียบร้อยแล้ว');
+      } else {
+        showToast('เกิดข้อผิดพลาดในการลบข้อมูล');
+      }
+    } catch (error) {
+      console.error('Error deleting person:', error);
+      showToast('เกิดข้อผิดพลาดในการลบข้อมูล');
     }
-    
-    showToast('ลบข้อมูลเรียบร้อยแล้ว');
   };
 
   // === DATA FILTERING ===
-  const filteredEmployees = employees.filter((emp) => {
-    const positionName = getPositionName(emp.positionId);
-    const auth = getAuthentication(emp.authenticationId);
-    const username = auth ? auth.username : '';
+  const filteredEmployees = persons.filter((person) => {
+    const rankName = getRankName(person.rankId || person.RANKID);
+    const username = person.username || person.USERNAME || '';
     
-    const matchesFilter = filter === 'All' || positionName === filter;
+    const matchesFilter = filter === 'All' || rankName === filter;
     const matchesSearch = 
-      username.includes(search) || 
-      emp.name.toLowerCase().includes(search.toLowerCase());
+      username.toLowerCase().includes(search.toLowerCase()) || 
+      (person.name || person.NAME || '').toLowerCase().includes(search.toLowerCase());
     return matchesFilter && matchesSearch;
   });
 
@@ -388,13 +321,11 @@ function PersonPage() {
                 setShowForm(true); 
                 setEditingId(null); 
                 setForm({ 
-                  username: '', 
-                  password: '', 
+                  id: '',
                   name: '', 
-                  phones: [''], 
-                  email: '', 
-                  position: '', 
-                  department: '' 
+                  username: '',
+                  rankId: '', 
+                  departmentId: ''
                 }); 
               }} 
               className="em-btn primary" 
@@ -415,8 +346,8 @@ function PersonPage() {
               className="em-select"
             >
               <option value="All">All</option>
-              {positions.map(pos => (
-                <option key={pos.id} value={pos.name}>{pos.name}</option>
+              {ranks.map(rank => (
+                <option key={rank.rankId} value={rank.name}>{rank.name}</option>
               ))}
             </select>
           </>
@@ -431,29 +362,30 @@ function PersonPage() {
               <tr>
                 <th>Username</th>
                 <th>ชื่อ</th>
+                <th>ยศ</th>
                 <th>แผนก</th>
                 <th className="center">การจัดการ</th>
               </tr>
             </thead>
             <tbody>
-              {filteredEmployees.map(emp => {
-                const auth = getAuthentication(emp.authenticationId);
+              {filteredEmployees.map(person => {
                 return (
-                  <tr key={emp.id}>
-                    <td>{auth ? auth.username : 'ไม่ข้อมูล'}</td>
-                    <td>{emp.name}</td>
-                    <td>{getDepartmentName(emp.departmentId)}</td>
+                  <tr key={person.personId || person.id}>
+                    <td>{person.username || person.USERNAME}</td>
+                    <td>{person.name || person.NAME}</td>
+                    <td>{getRankName(person.rankId || person.RANKID)}</td>
+                    <td>{getDepartmentName(person.departmentId || person.DEPARTMENTID)}</td>
                     <td className="center">
                       <button 
                         className="em-action-btn" 
-                        onClick={() => handleEdit(emp)}
+                        onClick={() => handleEdit(person)}
                       >
                         แก้ไข
                       </button>
                       <button 
                         className="em-action-btn view" 
                         onClick={() => { 
-                          setDetailEmp(emp); 
+                          setDetailEmp(person); 
                           setShowDetail(true); 
                         }}
                       >
@@ -461,7 +393,7 @@ function PersonPage() {
                       </button>
                       <button 
                         className="em-action-btn delete" 
-                        onClick={() => handleDelete(emp.id)}
+                        onClick={() => handleDelete(person.personId || person.id)}
                       >
                         ลบ
                       </button>
@@ -471,7 +403,7 @@ function PersonPage() {
               })}
               {filteredEmployees.length === 0 && (
                 <tr>
-                  <td colSpan={4}>
+                  <td colSpan={5}>
                     <div className="em-empty-state">
                       <h3>ไม่พบข้อมูลพนักงาน</h3>
                       <p>ลองปรับเปลี่ยนคำค้นหาหรือตัวกรอง หรือเพิ่มพนักงานใหม่</p>
@@ -511,9 +443,6 @@ function PersonPage() {
                     className="em-modal-input" 
                     required 
                   />
-                  {formErrors.name && (
-                    <div className="em-error">{formErrors.name}</div>
-                  )}
 
                   <label className="em-input-label">Username</label>
                   <input 
@@ -524,43 +453,23 @@ function PersonPage() {
                     className="em-modal-input" 
                     required 
                   />
-                  {formErrors.username && (
-                    <div className="em-error">{formErrors.username}</div>
-                  )}
-
-                  <label className="em-input-label">รหัสผ่าน</label>
-                  <input 
-                    name="password" 
-                    type="password"
-                    placeholder="Password" 
-                    value={form.password} 
-                    onChange={handleChange} 
-                    className="em-modal-input" 
-                    required 
-                  />
-                  {formErrors.password && (
-                    <div className="em-error">{formErrors.password}</div>
-                  )}
                 </div>
 
                 {/* Right Column */}
                 <div className="em-modal-col">
-                  <label className="em-input-label">ตำแหน่ง</label>
+                  <label className="em-input-label">ยศ</label>
                   <select 
-                    name="positionId" 
-                    value={form.positionId} 
+                    name="rankId" 
+                    value={form.rankId} 
                     onChange={handleChange} 
                     className="em-modal-select" 
                     required
                   >
-                    <option value="">เลือกตำแหน่ง</option>
-                    {positions.map(p => (
-                      <option key={p.id} value={p.id}>{p.name}</option>
+                    <option value="">เลือกยศ</option>
+                    {ranks.map(r => (
+                      <option key={r.rankId} value={r.rankId}>{r.name}</option>
                     ))}
                   </select>
-                  {formErrors.positionId && (
-                    <div className="em-error">{formErrors.positionId}</div>
-                  )}
 
                   <label className="em-input-label">แผนก</label>
                   <select 
@@ -572,31 +481,9 @@ function PersonPage() {
                   >
                     <option value="">เลือกแผนก</option>
                     {departments.map(d => (
-                      <option key={d.id} value={d.id}>{d.name}</option>
+                      <option key={d.departmentId} value={d.departmentId}>{d.name}</option>
                     ))}
                   </select>
-                  {formErrors.departmentId && (
-                    <div className="em-error">{formErrors.departmentId}</div>
-                  )}
-
-                  {/* แสดงสิทธิ์ของตำแหน่ง */}
-                  {form.positionId && (
-                    <div>
-                      <label className="em-input-label">สิทธิ์ของตำแหน่ง</label>
-                      <div style={{ 
-                        background: '#181A20', 
-                        padding: 8, 
-                        borderRadius: 4, 
-                        fontSize: 12 
-                      }}>
-                        {getPersonPermissions(parseInt(form.positionId)).map(perm => (
-                          <div key={perm.id} style={{ marginBottom: 4 }}>
-                            • {perm.name}: {perm.description}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
                 </div>
               </div>
 
@@ -620,10 +507,9 @@ function PersonPage() {
                     setForm({ 
                       id: '', 
                       name: '', 
-                      positionId: '', 
+                      rankId: '', 
                       departmentId: '', 
-                      username: '', 
-                      password: '' 
+                      username: ''
                     }); 
                   }} 
                   className="em-modal-btn cancel" 
@@ -637,61 +523,38 @@ function PersonPage() {
         )}
 
         {/* Employee Detail Modal */}
-        {showDetail && detailEmp && (() => {
-          const auth = getAuthentication(detailEmp.authenticationId);
-          const permissions = getPersonPermissions(detailEmp.positionId);
-          
-          return (
-            <div className="em-modal-bg">
-              <div className="em-modal em-modal--wide">
-                <div className="em-modal-title">ข้อมูลบุคคล</div>
-                
-                <div className="em-modal-grid">
-                  <div className="em-modal-col">
-                    <div><b>ID:</b> {detailEmp.id}</div>
-                    <div><b>ชื่อ-นามสกุล:</b> {detailEmp.name}</div>
-                    <div><b>Username:</b> {auth ? auth.username : 'ไม่ข้อมูล'}</div>
-                    <div><b>รหัสผ่าน:</b> {auth ? auth.password : 'ไม่ข้อมูล'}</div>
-                  </div>
-                  <div className="em-modal-col">
-                    <div><b>ตำแหน่ง:</b> {getPositionName(detailEmp.positionId)}</div>
-                    <div><b>แผนก:</b> {getDepartmentName(detailEmp.departmentId)}</div>
-                    <div>
-                      <b>สิทธิ์:</b>
-                      <div style={{ marginTop: 8, fontSize: 14 }}>
-                        {permissions.map(perm => (
-                          <div key={perm.id} style={{ 
-                            background: '#0A3D2E', 
-                            padding: '4px 8px', 
-                            borderRadius: 4, 
-                            marginBottom: 4, 
-                            display: 'inline-block',
-                            marginRight: 8
-                          }}>
-                            {perm.name}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
+        {showDetail && detailEmp && (
+          <div className="em-modal-bg">
+            <div className="em-modal em-modal--wide">
+              <div className="em-modal-title">ข้อมูลบุคคล</div>
+              
+              <div className="em-modal-grid">
+                <div className="em-modal-col">
+                  <div><b>ID:</b> {detailEmp.personId || detailEmp.id}</div>
+                  <div><b>ชื่อ-นามสกุล:</b> {detailEmp.name || detailEmp.NAME}</div>
+                  <div><b>Username:</b> {detailEmp.username || detailEmp.USERNAME || 'ไม่ข้อมูล'}</div>
                 </div>
-                
-                <div className="em-modal-btns">
-                  <button 
-                    type="button" 
-                    onClick={() => { 
-                      setShowDetail(false); 
-                      setDetailEmp(null); 
-                    }} 
-                    className="em-modal-btn cancel"
-                  >
-                    ปิด
-                  </button>
+                <div className="em-modal-col">
+                  <div><b>ยศ:</b> {getRankName(detailEmp.rankId || detailEmp.RANKID)}</div>
+                  <div><b>แผนก:</b> {getDepartmentName(detailEmp.departmentId || detailEmp.DEPARTMENTID)}</div>
                 </div>
               </div>
+              
+              <div className="em-modal-btns">
+                <button 
+                  type="button" 
+                  onClick={() => { 
+                    setShowDetail(false); 
+                    setDetailEmp(null); 
+                  }} 
+                  className="em-modal-btn cancel"
+                >
+                  ปิด
+                </button>
+              </div>
             </div>
-          );
-        })()}
+          </div>
+        )}
 
         {/* Toast Notification */}
         {toast && (
