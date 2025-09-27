@@ -1,5 +1,4 @@
 const database = require('../config/database');
-const { mockRanks } = require('../mockData');
 
 class RankController {
   
@@ -23,12 +22,11 @@ class RankController {
         message: 'Ranks retrieved successfully'
       });
     } catch (error) {
-      console.error('Database error, using mock data:', error.message);
-      // Fallback to mock data when database is not available
-      res.json({
-        success: true,
-        data: mockRanks,
-        message: 'Ranks retrieved successfully (from mock data - database unavailable)'
+      console.error('Error fetching ranks from database:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error fetching ranks from database',
+        error: error.message
       });
     }
   }

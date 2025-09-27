@@ -2,7 +2,22 @@ import React, { useState, useEffect } from 'react';
 import '../pages/PersonPage.css';
 
 // === API CONFIGURATION ===
-const API_BASE_URL = 'http://localhost:3001/api';
+const API_BASE_URL = '/api';
+
+const normalizeIsActive = (v) => {
+  if (v === 1 || v === '1' || v === true) return 1;
+  if (typeof v === 'string') {
+    const s = v.toLowerCase();
+    if (s === 'y' || s === 't' || s === 'true') return 1;
+  }
+  return 0;
+};
+
+const normalizeRank = (r) => ({
+  rankId: r.RANKID ?? r.rankId ?? '',
+  name: r.NAME ?? r.name ?? '',
+  isActive: normalizeIsActive(r.IS_ACTIVE ?? r.isActive),
+});
 
 function PositionManager() {
   const [positions, setPositions] = useState([]);
@@ -18,7 +33,8 @@ function PositionManager() {
       const response = await fetch(`${API_BASE_URL}/ranks`);
       const data = await response.json();
       if (data.success) {
-        setPositions(data.data || []);
+        const normalized = (data.data || []).map(normalizeRank);
+        setPositions(normalized);
       } else {
         console.error('Failed to fetch ranks:', data.message);
       }

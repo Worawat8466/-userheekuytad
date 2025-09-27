@@ -1,5 +1,4 @@
 const database = require('../config/database');
-const { mockDepartments } = require('../mockData');
 
 class DepartmentController {
   
@@ -23,12 +22,11 @@ class DepartmentController {
         message: 'Departments retrieved successfully'
       });
     } catch (error) {
-      console.error('Database error, using mock data:', error.message);
-      // Fallback to mock data when database is not available
-      res.json({
-        success: true,
-        data: mockDepartments,
-        message: 'Departments retrieved successfully (from mock data - database unavailable)'
+      console.error('Error fetching departments from database:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error fetching departments from database',
+        error: error.message
       });
     }
   }

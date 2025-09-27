@@ -5,9 +5,11 @@ import PositionManager from '../components/PositionManager';
 import './PersonPage.css';
 
 // === API CONFIGURATION ===
-const API_BASE_URL = 'http://localhost:3001/api';
+const API_BASE_URL = '/api';
 
 function PersonPage() {
+  console.log('🎯 PersonPage component loaded!');
+  
   // === NAVIGATION STATE ===
   const [activePage, setActivePage] = useState('employee');
 
@@ -41,6 +43,43 @@ function PersonPage() {
   const [loading, setLoading] = useState(false);
   const [dataLoading, setDataLoading] = useState(true);
 
+  // === NORMALIZERS ===
+  const normalizeIsActive = (v) => {
+    if (v === 1 || v === '1' || v === true) return 1;
+    if (typeof v === 'string') {
+      const s = v.toLowerCase();
+      if (s === 'y' || s === 't' || s === 'true') return 1;
+      if (s === 'n' || s === 'f' || s === 'false') return 0;
+    }
+    return 0;
+  };
+
+  const normalizePerson = (p) => ({
+    personId: p.PERSONID ?? p.personId ?? '',
+    name: p.NAME ?? p.name ?? '',
+    username: p.USERNAME ?? p.username ?? '',
+    systemPermis: p.SYSTEMPERMIS ?? p.systemPermis ?? 'U',
+    rankId: p.RANKID ?? p.rankId ?? '',
+    departmentId: p.DEPARTMENTID ?? p.departmentId ?? '',
+    isActive: normalizeIsActive(p.IS_ACTIVE ?? p.isActive),
+    rankName: p.RANK_NAME ?? p.rankName ?? undefined,
+    departmentName: p.DEPARTMENT_NAME ?? p.departmentName ?? undefined,
+    // Do not expose password from API in UI state
+    password: ''
+  });
+
+  const normalizeDepartment = (d) => ({
+    departmentId: d.DEPARTMENTID ?? d.departmentId ?? '',
+    name: d.NAME ?? d.name ?? '',
+    isActive: normalizeIsActive(d.IS_ACTIVE ?? d.isActive)
+  });
+
+  const normalizeRank = (r) => ({
+    rankId: r.RANKID ?? r.rankId ?? '',
+    name: r.NAME ?? r.name ?? '',
+    isActive: normalizeIsActive(r.IS_ACTIVE ?? r.isActive)
+  });
+
   // === API FUNCTIONS ===
   const fetchPersons = async () => {
     try {
@@ -50,39 +89,16 @@ function PersonPage() {
       const data = await response.json();
       console.log('📄 Persons API response:', data);
       if (data.success) {
-        setEmployees(data.data || []);
-        console.log('✅ Set employees to:', data.data);
+        const normalized = (data.data || []).map(normalizePerson);
+        setEmployees(normalized);
+        console.log('✅ Set employees to (normalized):', normalized);
       } else {
         console.error('❌ Failed to fetch persons:', data.message);
-        // Set mock data as fallback
-        const mockData = [
-          {
-            PERSONID: 'P000000001',
-            NAME: 'Mock User 1 (Fallback)', 
-            USERNAME: 'mock1',
-            SYSTEMPERMIS: 'A',
-            RANKID: 'RANK4',
-            DEPARTMENTID: 'DEPT2',
-            IS_ACTIVE: 1
-          }
-        ];
-        setEmployees(mockData);
+        setEmployees([]);
       }
     } catch (error) {
       console.error('🚨 Error fetching persons:', error);
-      // Set mock data as fallback
-      const mockData = [
-        {
-          PERSONID: 'P000000001',
-          NAME: 'Mock User 1 (Error Fallback)',
-          USERNAME: 'mock1', 
-          SYSTEMPERMIS: 'A',
-          RANKID: 'RANK4',
-          DEPARTMENTID: 'DEPT2',
-          IS_ACTIVE: 1
-        }
-      ];
-      setEmployees(mockData);
+      setEmployees([]);
     }
   };
 
@@ -93,7 +109,8 @@ function PersonPage() {
       const data = await response.json();
       console.log('Departments API response:', data);
       if (data.success) {
-        setDepartments(data.data || []);
+        const normalized = (data.data || []).map(normalizeDepartment);
+        setDepartments(normalized);
       } else {
         console.error('Failed to fetch departments:', data.message);
       }
@@ -107,7 +124,8 @@ function PersonPage() {
       const response = await fetch(`${API_BASE_URL}/ranks`);
       const data = await response.json();
       if (data.success) {
-        setRanks(data.data || []);
+        const normalized = (data.data || []).map(normalizeRank);
+        setRanks(normalized);
       } else {
         console.error('Failed to fetch ranks:', data.message);
       }
@@ -118,6 +136,7 @@ function PersonPage() {
 
   // === LOAD DATA ON COMPONENT MOUNT ===
   useEffect(() => {
+    console.log('🔄 useEffect triggered - loading data');
     const loadData = async () => {
       setDataLoading(true);
       await Promise.all([
@@ -126,6 +145,7 @@ function PersonPage() {
         fetchRanks()
       ]);
       setDataLoading(false);
+      console.log('✅ Data loading completed');
     };
 
     loadData();
@@ -141,15 +161,15 @@ function PersonPage() {
   });
 
   // === UTILITY FUNCTIONS ===
-  const getRankName = (rankId) => {
+  const getRankName = (rankId, fallbackLabel) => {
     if (!rankId) return 'ไม่ระบุ';
     const rank = ranks.find(r => r.rankId === rankId);
-    return rank ? rank.name : 'ไม่ระบุ';
+    return fallbackLabel || (rank ? rank.name : 'ไม่ระบุ');
   };
 
-  const getDepartmentName = (departmentId) => {
+  const getDepartmentName = (departmentId, fallbackLabel) => {
     const department = departments.find(d => d.departmentId === departmentId);
-    return department ? department.name : 'ไม่ระบุ';
+    return fallbackLabel || (department ? department.name : 'ไม่ระบุ');
   };
 
   const getSystemPermissionText = (systemPermis) => {
@@ -163,17 +183,11 @@ function PersonPage() {
       if (data.success && data.data) {
         return data.data.personId;
       } else {
-        // Fallback to client-side generation if API fails
-        const maxId = Math.max(...employees.map(emp => parseInt(emp.personId.substring(1))));
-        const nextId = maxId + 1;
-        return 'P' + nextId.toString().padStart(9, '0');
+        throw new Error(data.message || 'Failed to generate person ID');
       }
     } catch (error) {
       console.error('Error generating person ID:', error);
-      // Fallback to client-side generation
-      const maxId = Math.max(...employees.map(emp => parseInt(emp.personId.substring(1))));
-      const nextId = maxId + 1;
-      return 'P' + nextId.toString().padStart(9, '0');
+      throw error;
     }
   };
 
@@ -359,22 +373,22 @@ function PersonPage() {
 
   // === FILTER & SEARCH ===
   const filteredEmployees = employees.filter(emp => {
-    const name = emp.NAME || emp.name || '';
-    const username = emp.USERNAME || emp.username || '';
-    const personId = emp.PERSONID || emp.personId || '';
-    const isActive = emp.IS_ACTIVE !== undefined ? emp.IS_ACTIVE : emp.isActive;
-    const systemPermis = emp.SYSTEMPERMIS || emp.systemPermis;
-    
-    const matchesSearch = name.toLowerCase().includes(search.toLowerCase()) || 
-                         username.toLowerCase().includes(search.toLowerCase()) ||
-                         personId.toLowerCase().includes(search.toLowerCase());
-    
-    const matchesFilter = filter === 'All' || 
-                         (filter === 'Active' && isActive === 1) || 
-                         (filter === 'Inactive' && isActive === 0) ||
-                         (filter === 'Admin' && systemPermis === 'A') ||
-                         (filter === 'User' && systemPermis === 'U');
-    
+    const name = emp.name || '';
+    const username = emp.username || '';
+    const personId = emp.personId || '';
+    const isActive = emp.isActive;
+    const systemPermis = emp.systemPermis;
+
+    const matchesSearch = name.toLowerCase().includes(search.toLowerCase()) ||
+      username.toLowerCase().includes(search.toLowerCase()) ||
+      personId.toLowerCase().includes(search.toLowerCase());
+
+    const matchesFilter = filter === 'All' ||
+      (filter === 'Active' && isActive === 1) ||
+      (filter === 'Inactive' && isActive === 0) ||
+      (filter === 'Admin' && systemPermis === 'A') ||
+      (filter === 'User' && systemPermis === 'U');
+
     return matchesSearch && matchesFilter;
   });
 
@@ -388,13 +402,7 @@ function PersonPage() {
   
   // Debug each employee
   employees.forEach((emp, index) => {
-    console.log(`Employee ${index}:`, {
-      name: emp.NAME || emp.name,
-      username: emp.USERNAME || emp.username,
-      personId: emp.PERSONID || emp.personId,
-      isActive: emp.IS_ACTIVE !== undefined ? emp.IS_ACTIVE : emp.isActive,
-      systemPermis: emp.SYSTEMPERMIS || emp.systemPermis
-    });
+    console.log(`Employee ${index}:`, emp);
   });
 
   // === RENDER ===
@@ -507,40 +515,40 @@ function PersonPage() {
                 </thead>
                 <tbody>
                   {filteredEmployees.map(emp => (
-                    <tr key={emp.PERSONID || emp.personId}>
-                      <td style={{fontFamily: 'monospace', fontWeight: 'bold'}}>{emp.PERSONID || emp.personId}</td>
-                      <td>{emp.NAME || emp.name}</td>
-                      <td style={{fontFamily: 'monospace'}}>{emp.USERNAME || emp.username}</td>
+                    <tr key={emp.personId}>
+                      <td style={{fontFamily: 'monospace', fontWeight: 'bold'}}>{emp.personId}</td>
+                      <td>{emp.name}</td>
+                      <td style={{fontFamily: 'monospace'}}>{emp.username}</td>
                       <td>
                         <span style={{
-                          background: (emp.SYSTEMPERMIS || emp.systemPermis) === 'A' ? '#FF5722' : '#2196F3',
+                          background: emp.systemPermis === 'A' ? '#FF5722' : '#2196F3',
                           color: 'white',
                           padding: '2px 8px',
                           borderRadius: '12px',
                           fontSize: '12px',
                           fontWeight: 'bold'
                         }}>
-                          {(emp.SYSTEMPERMIS || emp.systemPermis) === 'A' ? 'Admin' : 'User'}
+                          {emp.systemPermis === 'A' ? 'Admin' : 'User'}
                         </span>
                       </td>
-                      <td>{getRankName(emp.RANKID || emp.rankId)}</td>
-                      <td>{getDepartmentName(emp.DEPARTMENTID || emp.departmentId)}</td>
+                      <td>{getRankName(emp.rankId, emp.rankName)}</td>
+                      <td>{getDepartmentName(emp.departmentId, emp.departmentName)}</td>
                       <td>
                         <span style={{
-                          background: (emp.IS_ACTIVE || emp.isActive) === 1 ? '#4CAF50' : '#F44336',
+                          background: emp.isActive === 1 ? '#4CAF50' : '#F44336',
                           color: 'white',
                           padding: '2px 8px',
                           borderRadius: '12px',
                           fontSize: '12px',
                           fontWeight: 'bold'
                         }}>
-                          {(emp.IS_ACTIVE || emp.isActive) === 1 ? 'ใช้งาน' : 'ไม่ใช้งาน'}
+                          {emp.isActive === 1 ? 'ใช้งาน' : 'ไม่ใช้งาน'}
                         </span>
                       </td>
                       <td className="center">
                         <button className="em-action-btn" onClick={() => handleDetail(emp)}>ดู</button>
                         <button className="em-action-btn" onClick={() => handleEdit(emp)}>แก้ไข</button>
-                        <button className="em-action-btn delete" onClick={() => handleDelete(emp.PERSONID || emp.personId)}>ลบ</button>
+                        <button className="em-action-btn delete" onClick={() => handleDelete(emp.personId)}>ลบ</button>
                       </td>
                     </tr>
                   ))}

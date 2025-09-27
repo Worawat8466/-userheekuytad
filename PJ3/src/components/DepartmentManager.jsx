@@ -2,7 +2,22 @@ import React, { useState, useEffect } from 'react';
 import '../pages/PersonPage.css';
 
 // === API CONFIGURATION ===
-const API_BASE_URL = 'http://localhost:3001/api';
+const API_BASE_URL = '/api';
+
+const normalizeIsActive = (v) => {
+  if (v === 1 || v === '1' || v === true) return 1;
+  if (typeof v === 'string') {
+    const s = v.toLowerCase();
+    if (s === 'y' || s === 't' || s === 'true') return 1;
+  }
+  return 0;
+};
+
+const normalizeDepartment = (d) => ({
+  departmentId: d.DEPARTMENTID ?? d.departmentId ?? '',
+  name: d.NAME ?? d.name ?? '',
+  isActive: normalizeIsActive(d.IS_ACTIVE ?? d.isActive),
+});
 
 function DepartmentManager() {
   const [departments, setDepartments] = useState([]);
@@ -18,7 +33,8 @@ function DepartmentManager() {
       const response = await fetch(`${API_BASE_URL}/departments`);
       const data = await response.json();
       if (data.success) {
-        setDepartments(data.data || []);
+        const normalized = (data.data || []).map(normalizeDepartment);
+        setDepartments(normalized);
       } else {
         console.error('Failed to fetch departments:', data.message);
       }

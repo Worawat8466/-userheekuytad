@@ -1,5 +1,4 @@
 const database = require('../config/database');
-const { mockPersons } = require('../mockData');
 
 class PersonController {
   
@@ -32,12 +31,11 @@ class PersonController {
         message: 'Persons retrieved successfully'
       });
     } catch (error) {
-      console.error('Database error, using mock data:', error.message);
-      // Fallback to mock data when database is not available
-      res.json({
-        success: true,
-        data: mockPersons,
-        message: 'Persons retrieved successfully (from mock data - database unavailable)'
+      console.error('Error fetching persons from database:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error fetching persons from database',
+        error: error.message
       });
     }
   }

@@ -1,7 +1,7 @@
 
 
 // === การ Import ===
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import DepartmentManager from './DepartmentManager';
 import PositionManager from './PositionManager';
 import './EmployeeManager.css';
@@ -18,6 +18,8 @@ const sidebarMenu = [
 ];
 
 // ลบ initialEmployees ออก ไม่ต้องมีโค้ดนี้อีกต่อไป
+
+const API_BASE_URL = 'http://localhost:3001/api';
 
 function EmployeeManager() {
   // === State สำหรับการนำทาง ===
@@ -48,6 +50,33 @@ function EmployeeManager() {
     username: '', password: '', name: '', 
     position: '', department: '' 
   });
+
+  // === ดึงข้อมูลจาก API ===
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/persons`);
+        const json = await res.json();
+        if (json.success) {
+          // แปลงข้อมูลให้เข้ากับโครงสร้างเดิมของตารางนี้
+          const mapped = (json.data || []).map(p => ({
+            id: p.PERSONID ?? p.personId ?? crypto.randomUUID?.() ?? Math.random(),
+            username: p.USERNAME ?? p.username ?? '',
+            name: p.NAME ?? p.name ?? '',
+            // ในหน้านี้แสดงเป็นชื่อแผนกแบบสั้น ๆ ถ้ายังไม่มีชื่อใช้รหัสไปก่อน
+            department: p.DEPARTMENTID ?? p.departmentId ?? '-'
+          }));
+          setEmployees(mapped);
+          console.log('EmployeeManager: loaded persons from API ->', mapped);
+        } else {
+          console.warn('EmployeeManager: persons API failed:', json.message);
+        }
+      } catch (e) {
+        console.error('EmployeeManager: fetch persons error', e);
+      }
+    };
+    load();
+  }, []);
 
   // === ฟังก์ชันจัดการฟอร์ม ===
   // อัปเดตข้อมูลในฟอร์ม
@@ -131,11 +160,14 @@ function EmployeeManager() {
 
   // exportCSV removed per request
 
-  const filteredEmployees = employees.filter(
-    (emp) =>
-      (filter === 'All' || emp.position === filter) &&
-      (emp.username.includes(search) || emp.name.toLowerCase().includes(search.toLowerCase()))
-  );
+  const filteredEmployees = employees.filter((emp) => {
+    const uname = (emp.username || '').toLowerCase();
+    const nm = (emp.name || '').toLowerCase();
+    const q = (search || '').toLowerCase();
+    // เกณฑ์กรองตำแหน่ง เดิมใช้กับ mock เท่านั้น ให้ผ่านทั้งหมดไว้ก่อน
+    const matchFilter = filter === 'All' || emp.position === filter;
+    return matchFilter && (uname.includes(q) || nm.includes(q));
+  });
 
   // ...existing code...
   // Sidebar active menu logic

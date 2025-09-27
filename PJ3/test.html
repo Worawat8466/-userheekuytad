@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test</title>
+</head>
+<body>
+    <h1>Test Page</h1>
+    <script>
+        console.log('🧪 Test page loaded');
+        console.log('📦 Trying to connect to API...');
+        
+        fetch('http://localhost:3001/api/persons')
+            .then(response => {
+                console.log('📡 API Response status:', response.status);
+                return response.json();
+            })
+            .then(data => {
+                console.log('📄 API Data:', data);
+            })
+            .catch(error => {
+                console.error('🚨 API Error:', error);
+            });
+    </script>
+</body>
+</html>
