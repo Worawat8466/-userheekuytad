@@ -1,20 +1,42 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import '../pages/PersonPage.css';
 
-const initialPositions = [
-  { id: 1, name: 'Admin', departmentId: 1, permissions: ['ดู', 'เพิ่ม', 'แก้ไข', 'ลบ'] },
-  { id: 2, name: 'Manager', departmentId: 2, permissions: ['ดู', 'แก้ไข'] },
-  { id: 3, name: 'Staff', departmentId: 3, permissions: ['ดู'] },
-];
-
-const allPermissions = ['ดู', 'เพิ่ม', 'แก้ไข', 'ลบ'];
+// === API CONFIGURATION ===
+const API_BASE_URL = 'http://localhost:3001/api';
 
 function PositionManager() {
-  const [positions, setPositions] = useState(initialPositions);
-  const [form, setForm] = useState({ id: '', name: '', departmentId: '', permissions: [] });
+  const [positions, setPositions] = useState([]);
+  const [form, setForm] = useState({ rankId: '', name: '', isActive: 1 });
   const [editingId, setEditingId] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [dataLoading, setDataLoading] = useState(true);
   const [toast, setToast] = useState(null);
+
+  // === API FUNCTIONS ===
+  const fetchRanks = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/ranks`);
+      const data = await response.json();
+      if (data.success) {
+        setPositions(data.data || []);
+      } else {
+        console.error('Failed to fetch ranks:', data.message);
+      }
+    } catch (error) {
+      console.error('Error fetching ranks:', error);
+    }
+  };
+
+  // === LOAD DATA ON COMPONENT MOUNT ===
+  useEffect(() => {
+    const loadData = async () => {
+      setDataLoading(true);
+      await fetchRanks();
+      setDataLoading(false);
+    };
+
+    loadData();
+  }, []);
 
   const showToast = (message, type = 'success') => {
     setToast({ message, type });
@@ -23,53 +45,109 @@ function PositionManager() {
 
   const handleAdd = async (e) => {
     e.preventDefault();
-    if (!form.name.trim()) return;
+    if (!form.rankId.trim() || !form.name.trim()) return;
     
     setLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 300));
     
-    const newId = form.id ? parseInt(form.id) : Date.now();
-    const deptId = form.departmentId ? parseInt(form.departmentId) : 1;
-    setPositions([...positions, { id: newId, name: form.name, departmentId: deptId, permissions: form.permissions }]);
-    setForm({ id: '', name: '', departmentId: '', permissions: [] });
-    setEditingId(null);
+    try {
+      const newPosition = {
+        rankId: form.rankId,
+        name: form.name,
+        isActive: parseInt(form.isActive)
+      };
+      
+      const response = await fetch(`${API_BASE_URL}/ranks`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(newPosition)
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        await fetchRanks(); // Refresh data from server
+        setForm({ rankId: '', name: '', isActive: 1 });
+        setEditingId(null);
+        showToast('เพิ่มตำแหน่งเรียบร้อยแล้ว');
+      } else {
+        showToast(data.message || 'เกิดข้อผิดพลาดในการเพิ่มข้อมูล', 'error');
+      }
+    } catch (error) {
+      console.error('Error adding rank:', error);
+      showToast('เกิดข้อผิดพลาดในการเพิ่มข้อมูล', 'error');
+    }
+    
     setLoading(false);
-    showToast('เพิ่มตำแหน่งเรียบร้อยแล้ว');
   };
 
   const handleEdit = (pos) => {
-    setEditingId(pos.id);
-    setForm({ id: pos.id, name: pos.name, departmentId: pos.departmentId, permissions: pos.permissions });
+    setEditingId(pos.rankId);
+    setForm({ rankId: pos.rankId, name: pos.name, isActive: pos.isActive });
   };
 
   const handleUpdate = async (e) => {
     e.preventDefault();
     
     setLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 300));
     
-    const updatedId = form.id ? parseInt(form.id) : editingId;
-    const deptId = form.departmentId ? parseInt(form.departmentId) : 1;
-    setPositions(positions.map(pos => pos.id === editingId ? { ...pos, id: updatedId, name: form.name, departmentId: deptId, permissions: form.permissions } : pos));
-    setEditingId(null);
-    setForm({ id: '', name: '', departmentId: '', permissions: [] });
+    try {
+      const updatedPosition = {
+        name: form.name,
+        isActive: parseInt(form.isActive)
+      };
+      
+      const response = await fetch(`${API_BASE_URL}/ranks/${editingId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updatedPosition)
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        await fetchRanks(); // Refresh data from server
+        setEditingId(null);
+        setForm({ rankId: '', name: '', isActive: 1 });
+        showToast('แก้ไขข้อมูลเรียบร้อยแล้ว');
+      } else {
+        showToast(data.message || 'เกิดข้อผิดพลาดในการแก้ไขข้อมูล', 'error');
+      }
+    } catch (error) {
+      console.error('Error updating rank:', error);
+      showToast('เกิดข้อผิดพลาดในการแก้ไขข้อมูล', 'error');
+    }
+    
     setLoading(false);
-    showToast('แก้ไขข้อมูลเรียบร้อยแล้ว');
   };
 
-  const handleDelete = (id) => {
+  const handleDelete = async (rankId) => {
     if (!window.confirm('ลบตำแหน่งนี้?')) return;
-    setPositions(positions.filter(pos => pos.id !== id));
-    showToast('ลบข้อมูลเรียบร้อยแล้ว');
-  };
-
-  const togglePermission = (perm) => {
-    setForm(form => ({
-      ...form,
-      permissions: form.permissions.includes(perm)
-        ? form.permissions.filter(p => p !== perm)
-        : [...form.permissions, perm]
-    }));
+    
+    setLoading(true);
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/ranks/${rankId}`, {
+        method: 'DELETE'
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        await fetchRanks(); // Refresh data from server
+        showToast('ลบข้อมูลเรียบร้อยแล้ว');
+      } else {
+        showToast(data.message || 'เกิดข้อผิดพลาดในการลบข้อมูล', 'error');
+      }
+    } catch (error) {
+      console.error('Error deleting rank:', error);
+      showToast('เกิดข้อผิดพลาดในการลบข้อมูล', 'error');
+    }
+    
+    setLoading(false);
   };
 
   return (
@@ -78,7 +156,7 @@ function PositionManager() {
         <h3 style={{ margin: 0, fontSize: 18, fontWeight: 'bold' }}>จัดการตำแหน่ง</h3>
       </div>
 
-      {/* Top row with add button, search and filter */}
+      {/* Top row with add button and search */}
       <div style={{ marginBottom: 16 }}>
         {!editingId && (
           <>
@@ -93,39 +171,24 @@ function PositionManager() {
                 // TODO: Implement search functionality
               }}
             />
-            <select className="em-select">
-              <option value="">ทุกแผนก</option>
-              <option value="IT">IT</option>
-              <option value="HR">HR</option>
-              <option value="Finance">Finance</option>
-              <option value="Marketing">Marketing</option>
-            </select>
           </>
         )}
       </div>
       
-      {/* Keep existing add button structure for backward compatibility */}
-      {!editingId && false && (
-        <div style={{ marginBottom: 16 }}>
-          <button type="button" className="em-btn primary" onClick={() => setEditingId('new')}>
-            <span style={{ fontSize: 16 }}>+</span> เพิ่มตำแหน่ง
-          </button>
-        </div>
-      )}
-
       {/* Form for adding/editing */}
       {(editingId === 'new' || editingId) && (
         <div style={{ marginBottom: 24, padding: 16, background: '#23252B', borderRadius: 8 }}>
           <form onSubmit={editingId === 'new' ? handleAdd : handleUpdate}>
             <div style={{ marginBottom: 12 }}>
-              <label className="em-input-label">ID (ถ้าไม่ระบุจะ auto generate)</label>
+              <label className="em-input-label">รหัสตำแหน่ง (RANK1, RANK2, ฯลฯ)</label>
               <input 
-                value={form.id} 
-                onChange={e => setForm({ ...form, id: e.target.value })} 
-                placeholder="ID" 
+                value={form.rankId} 
+                onChange={e => setForm({ ...form, rankId: e.target.value.toUpperCase() })} 
+                placeholder="เช่น RANK6" 
                 className="em-modal-input" 
-                style={{ width: '120px' }} 
-                type="number" 
+                style={{ width: '200px' }} 
+                maxLength={5}
+                disabled={editingId !== 'new'}
               />
             </div>
             <div style={{ marginBottom: 12 }}>
@@ -136,33 +199,20 @@ function PositionManager() {
                 placeholder="ชื่อตำแหน่ง" 
                 className="em-modal-input" 
                 style={{ width: '300px' }} 
+                maxLength={20}
               />
             </div>
             <div style={{ marginBottom: 12 }}>
-              <label className="em-input-label">รหัสแผนก (departmentId)</label>
-              <input 
-                value={form.departmentId} 
-                onChange={e => setForm({ ...form, departmentId: e.target.value })} 
-                placeholder="รหัสแผนก" 
+              <label className="em-input-label">สถานะ</label>
+              <select 
+                value={form.isActive} 
+                onChange={e => setForm({ ...form, isActive: parseInt(e.target.value) })} 
                 className="em-modal-input" 
-                style={{ width: '180px' }} 
-                type="number" 
-              />
-            </div>
-            <div style={{ marginBottom: 12 }}>
-              <label className="em-input-label">สิทธิ์:</label>
-              <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginTop: 8 }}>
-                {allPermissions.map(perm => (
-                  <label key={perm} style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#fff' }}>
-                    <input 
-                      type="checkbox" 
-                      checked={form.permissions.includes(perm)} 
-                      onChange={() => togglePermission(perm)} 
-                    /> 
-                    {perm}
-                  </label>
-                ))}
-              </div>
+                style={{ width: '150px' }}
+              >
+                <option value={1}>ใช้งาน (1)</option>
+                <option value={0}>ไม่ใช้งาน (0)</option>
+              </select>
             </div>
             <div>
               <button type="submit" className="em-modal-btn" disabled={loading}>
@@ -177,7 +227,7 @@ function PositionManager() {
               </button>
               <button 
                 type="button" 
-                onClick={() => { setEditingId(null); setForm({ id: '', name: '', departmentId: '', permissions: [] }); }} 
+                onClick={() => { setEditingId(null); setForm({ rankId: '', name: '', isActive: 1 }); }} 
                 className="em-modal-btn cancel"
                 disabled={loading}
               >
@@ -192,29 +242,38 @@ function PositionManager() {
         <table className="em-table">
           <thead>
             <tr>
-              <th style={{textAlign:'center'}}>ID</th>
+              <th style={{textAlign:'center'}}>รหัสตำแหน่ง</th>
               <th style={{textAlign:'center'}}>ชื่อตำแหน่ง</th>
-              <th style={{textAlign:'center'}}>แผนก (departmentId)</th>
-              <th>สิทธิ์</th>
+              <th style={{textAlign:'center'}}>สถานะ</th>
               <th className="center">การจัดการ</th>
             </tr>
           </thead>
           <tbody>
             {positions.map(pos => (
-              <tr key={pos.id}>
-                <td style={{textAlign:'center'}}>{pos.id}</td>
+              <tr key={pos.rankId}>
+                <td style={{textAlign:'center', fontFamily: 'monospace', fontWeight: 'bold'}}>{pos.rankId}</td>
                 <td style={{textAlign:'center'}}>{pos.name}</td>
-                <td style={{textAlign:'center'}}>{pos.departmentId}</td>
-                <td>{pos.permissions.join(', ')}</td>
+                <td style={{textAlign:'center'}}>
+                  <span style={{
+                    background: pos.isActive === 1 ? '#4CAF50' : '#F44336',
+                    color: 'white',
+                    padding: '2px 8px',
+                    borderRadius: '12px',
+                    fontSize: '12px',
+                    fontWeight: 'bold'
+                  }}>
+                    {pos.isActive === 1 ? 'ใช้งาน' : 'ไม่ใช้งาน'}
+                  </span>
+                </td>
                 <td className="center">
                   <button className="em-action-btn" onClick={() => handleEdit(pos)}>แก้ไข</button>
-                  <button className="em-action-btn delete" onClick={() => handleDelete(pos.id)}>ลบ</button>
+                  <button className="em-action-btn delete" onClick={() => handleDelete(pos.rankId)}>ลบ</button>
                 </td>
               </tr>
             ))}
             {positions.length === 0 && (
               <tr>
-                <td colSpan={5}>
+                <td colSpan={4}>
                   <div className="em-empty-state">
                     <h3>ไม่มีข้อมูลตำแหน่ง</h3>
                     <p>เพิ่มตำแหน่งใหม่เพื่อเริ่มต้นการจัดการ</p>

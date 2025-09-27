@@ -8,8 +8,7 @@ const EmployeeForm = ({
   editingId,
   onSubmit,
   onCancel,
-  onFormChange,
-  onPhoneChange
+  onFormChange
 }) => (
   <div className="em-modal-bg">
     <form onSubmit={onSubmit} className="em-modal em-modal--wide">
@@ -41,27 +40,6 @@ const EmployeeForm = ({
             required
           />
           {formErrors.name && <div className="em-error">{formErrors.name}</div>}
-
-          <label className="em-input-label">เบอร์โทร</label>
-          <input
-            placeholder="เบอร์โทร"
-            value={form.phones[0]}
-            onChange={(e) => onPhoneChange(0, e.target.value)}
-            className="em-modal-input"
-            required
-          />
-          {formErrors.phone && <div className="em-error">{formErrors.phone}</div>}
-
-          <label className="em-input-label">อีเมล</label>
-          <input
-            name="email"
-            placeholder="อีเมล"
-            value={form.email}
-            onChange={onFormChange}
-            className="em-modal-input"
-            required
-          />
-          {formErrors.email && <div className="em-error">{formErrors.email}</div>}
         </div>
 
         {/* คอลัมน์ขวา */}

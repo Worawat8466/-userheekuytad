@@ -35,9 +35,9 @@ const initialBookings = [
 ];
 
 const initialCustomers = [
-  { id: 1, name: 'นายสมชาย ใจดี', phone: '081-234-5678', studentId: '6611130011' },
-  { id: 2, name: 'นางสาวสุดา สวยงาม', phone: '082-345-6789', studentId: '6611130012' },
-  { id: 3, name: 'นายประยุทธ์ ขยัน', phone: '083-456-7890', studentId: '6611130013' }
+  { id: 1, name: 'นายสมชาย ใจดี', studentId: '6611130011' },
+  { id: 2, name: 'นางสาวสุดา สวยงาม', studentId: '6611130012' },
+  { id: 3, name: 'นายประยุทธ์ ขยัน', studentId: '6611130013' }
 ];
 
 const initialSchedules = [

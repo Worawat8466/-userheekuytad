@@ -21,8 +21,8 @@ const initialDrivers = [
 ];
 
 const initialPersons = [
-  { id: 1, name: 'สมชาย ใจดี', phone: '081-234-5678' },
-  { id: 2, name: 'สุดา สวยงาม', phone: '082-345-6789' }
+  { id: 1, name: 'สมชาย ใจดี' },
+  { id: 2, name: 'สุดา สวยงาม' }
 ];
 
 // หน้า Driver - คนขับ
@@ -34,11 +34,6 @@ function DriverPage() {
   const getPersonName = (personId) => {
     const person = persons.find(p => p.id === personId);
     return person ? person.name : 'ไม่ระบุ';
-  };
-
-  const getPersonPhone = (personId) => {
-    const person = persons.find(p => p.id === personId);
-    return person ? person.phone : 'ไม่ระบุ';
   };
 
   return (
@@ -92,9 +87,6 @@ function DriverPage() {
             <div>
               <div style={{ marginBottom: 12 }}>
                 <strong>ชื่อ:</strong> {getPersonName(selectedDriver.personId)}
-              </div>
-              <div style={{ marginBottom: 12 }}>
-                <strong>เบอร์โทร:</strong> {getPersonPhone(selectedDriver.personId)}
               </div>
               <div style={{ marginBottom: 12 }}>
                 <strong>เลขใบขับขี่:</strong> {selectedDriver.licenseNumber}

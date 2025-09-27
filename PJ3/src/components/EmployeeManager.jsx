@@ -17,38 +17,7 @@ const sidebarMenu = [
   { key: 'Driver', label: 'Driver' },
 ];
 
-const initialEmployees = [
-  {
-    id: 1,
-    username: '6611130011',
-    name: 'สมชาย ใจดี',
-    password: 'pass1234',
-    phones: ['0812345678', '0898765432'],
-    email: 'somchai@example.com',
-    position: 'Admin',
-    department: 'Operations',
-  },
-  {
-    id: 2,
-    username: '6611130012',
-    name: 'สุดา สวยงาม',
-    password: 'suda5678',
-    phones: ['0823456789'],
-    email: 'suda@example.com',
-    position: 'Manager',
-    department: 'HR',
-  },
-  {
-    id: 3,
-    username: '6611130013',
-    name: 'ประยุทธ์ ขยัน',
-    password: 'prayut999',
-    phones: ['0834567890'],
-    email: 'prayut@example.com',
-    position: 'Staff',
-    department: 'Finance',
-  },
-];
+// ลบ initialEmployees ออก ไม่ต้องมีโค้ดนี้อีกต่อไป
 
 function EmployeeManager() {
   // === State สำหรับการนำทาง ===
@@ -56,10 +25,10 @@ function EmployeeManager() {
   const [activeMenu, setActiveMenu] = useState('Person');   // เมนูที่เลือกในเมนูซ้าย
 
   // === State สำหรับข้อมูลพนักงาน ===
-  const [employees, setEmployees] = useState(initialEmployees); // รายการพนักงานทั้งหมด
+  const [employees, setEmployees] = useState([]); // รายการพนักงานทั้งหมด - ดึงจาก API
   const [form, setForm] = useState({ 
-    username: '', password: '', name: '', phones: [''], 
-    email: '', position: '', department: '' 
+    username: '', password: '', name: '', 
+    position: '', department: '' 
   }); // ข้อมูลในฟอร์ม
   const [editingId, setEditingId] = useState(null); // ID ของพนักงานที่กำลังแก้ไข
 
@@ -76,8 +45,8 @@ function EmployeeManager() {
   const positions = ['All', 'Admin', 'Manager', 'Staff'];  // ตำแหน่งทั้งหมด
   const departments = ['Operations', 'HR', 'Finance'];       // แผนกทั้งหมด
   const [formErrors, setFormErrors] = useState({             // ข้อผิดพลาดในฟอร์ม
-    username: '', password: '', name: '', phone: '', 
-    email: '', position: '', department: '' 
+    username: '', password: '', name: '', 
+    position: '', department: '' 
   });
 
   // === ฟังก์ชันจัดการฟอร์ม ===
@@ -86,39 +55,12 @@ function EmployeeManager() {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  // จัดการเบอร์โทรศัพท์
-  const handlePhoneChange = (index, value) => {
-    const phones = [...form.phones];
-    phones[index] = value;
-    setForm({ ...form, phones });
-  };
-
-  // เพิ่มเบอร์โทรศัพท์ใหม่
-  const addPhone = () => {
-    setForm({ ...form, phones: [...form.phones, ''] });
-  };
-
-  // ลบเบอร์โทรศัพท์
-  const removePhone = (index) => {
-    const phones = form.phones.filter((_, i) => i !== index);
-    setForm({ ...form, phones: phones.length ? phones : [''] });
-  };
-
   // === ฟังก์ชันตรวจสอบข้อมูล ===
-  const validateEmail = (email) => {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-  };
-
-  const validatePhone = (phone) => {
-    const digits = (phone || '').replace(/[^0-9]/g, '');
-    return digits.length >= 7;
-  };
-
   // ตรวจสอบความถูกต้องของฟอร์มทั้งหมด
   const validateForm = () => {
     const errors = { 
-      username: '', password: '', name: '', phone: '', 
-      email: '', position: '', department: '' 
+      username: '', password: '', name: '', 
+      position: '', department: '' 
     };
     
     // ตรวจสอบแต่ละฟิลด์
@@ -131,27 +73,20 @@ function EmployeeManager() {
     if (!form.name || form.name.trim() === '') {
       errors.name = 'โปรดระบุชื่อ';
     }
-    
-    // ตรวจสอบเบอร์โทร (ต้องมีอย่างน้อย 1 เบอร์ที่ถูกต้อง)
-    const anyValidPhone = (form.phones || []).some(p => validatePhone(p));
-    if (!anyValidPhone) {
-      errors.phone = 'โปรดระบุหมายเลขโทรศัพท์อย่างน้อยหนึ่งหมายเลขที่ถูกต้อง';
-    }
-    
-    if (!validateEmail(form.email || '')) {
-      errors.email = 'รูปแบบอีเมลไม่ถูกต้อง';
-    }
     if (!form.position || form.position === '') {
       errors.position = 'โปรดเลือกตำแหน่ง';
     }
-    if (!form.department || form.department === '') errors.department = 'โปรดเลือกแผนก';
+    if (!form.department || form.department === '') {
+      errors.department = 'โปรดเลือกแผนก';
+    }
+    
     setFormErrors(errors);
     return Object.values(errors).every(v => !v);
   };
 
   const handleAdd = (e) => {
     e.preventDefault();
-    if (!form.username || !form.name || !form.position || !form.email || !form.department) return;
+    if (!form.username || !form.name || !form.position || !form.department) return;
     if (!validateForm()) return;
     setEmployees([
       ...employees,
@@ -160,19 +95,17 @@ function EmployeeManager() {
         username: form.username,
         password: form.password,
         name: form.name,
-        phones: form.phones,
-        email: form.email,
         position: form.position,
         department: form.department,
       },
     ]);
-    setForm({ username: '', password: '', name: '', phones: [''], email: '', position: '', department: '' });
+    setForm({ username: '', password: '', name: '', position: '', department: '' });
     setShowForm(false);
   };
 
   const handleEdit = (emp) => {
     setEditingId(emp.id);
-    setForm({ username: emp.username || '', password: emp.password || '', name: emp.name || '', phones: emp.phones || [''], email: emp.email || '', position: emp.position || '', department: emp.department || '' });
+    setForm({ username: emp.username || '', password: emp.password || '', name: emp.name || '', position: emp.position || '', department: emp.department || '' });
     setShowForm(true);
   };
 
@@ -187,7 +120,7 @@ function EmployeeManager() {
       )
     );
     setEditingId(null);
-    setForm({ username: '', password: '', name: '', phones: [''], email: '', position: '', department: '' });
+    setForm({ username: '', password: '', name: '', position: '', department: '' });
     setShowForm(false);
   };
 
@@ -244,7 +177,7 @@ function EmployeeManager() {
               {activePage === 'employee' && (
                 <>
                   <div style={{ flex: 1 }} />
-                  <button onClick={() => { setShowForm(true); setEditingId(null); setForm({ username: '', password: '', name: '', phones: [''], email: '', position: '', department: '' }); }} className="em-btn primary" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <button onClick={() => { setShowForm(true); setEditingId(null); setForm({ username: '', password: '', name: '', position: '', department: '' }); }} className="em-btn primary" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <span style={{ fontSize: 20 }}>+</span> เพิ่มบุคคล
                   </button>
                   <input
@@ -317,16 +250,6 @@ function EmployeeManager() {
                   <label className="em-input-label">ชื่อ</label>
                   <input name="name" placeholder="ชื่อ" value={form.name} onChange={handleChange} className="em-modal-input" required />
                   {formErrors.name && <div className="em-error">{formErrors.name}</div>}
-
-                  <label className="em-input-label">เบอร์โทร</label>
-                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                    <input name="phones[0]" placeholder="เบอร์โทร" value={form.phones[0]} onChange={e => handlePhoneChange(0, e.target.value)} className="em-modal-input" required />
-                  </div>
-                  {formErrors.phone && <div className="em-error">{formErrors.phone}</div>}
-
-                  <label className="em-input-label">อีเมล</label>
-                  <input name="email" placeholder="อีเมล" value={form.email} onChange={handleChange} className="em-modal-input" required />
-                  {formErrors.email && <div className="em-error">{formErrors.email}</div>}
                 </div>
 
                 <div className="em-modal-col">
@@ -354,7 +277,7 @@ function EmployeeManager() {
 
               <div className="em-modal-btns">
                 <button type="submit" className="em-modal-btn">{editingId ? 'บันทึก' : 'เพิ่ม'}</button>
-                <button type="button" onClick={() => { setShowForm(false); setEditingId(null); setForm({ username: '', password: '', name: '', phones: [''], email: '', position: '', department: '' }); }} className="em-modal-btn cancel">ยกเลิก</button>
+                <button type="button" onClick={() => { setShowForm(false); setEditingId(null); setForm({ username: '', password: '', name: '', position: '', department: '' }); }} className="em-modal-btn cancel">ยกเลิก</button>
               </div>
             </form>
           </div>
@@ -369,8 +292,6 @@ function EmployeeManager() {
                 <div className="em-modal-col">
                   <div><b>Username:</b> {detailEmp.username}</div>
                   <div><b>ชื่อ:</b> {detailEmp.name}</div>
-                  <div><b>เบอร์โทร:</b> {(detailEmp.phones && detailEmp.phones.join(', ')) || '-'}</div>
-                  <div><b>อีเมล:</b> {detailEmp.email || '-'}</div>
                 </div>
                 <div className="em-modal-col">
                   <div><b>ตำแหน่ง:</b> {detailEmp.position}</div>

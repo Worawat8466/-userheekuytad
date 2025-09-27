@@ -1,19 +1,42 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import '../pages/PersonPage.css';
 
-const initialDepartments = [
-  { departmentId: 'DEPT1', name: 'Sales', isActive: 1 },
-  { departmentId: 'DEPT2', name: 'IT', isActive: 1 },
-  { departmentId: 'DEPT3', name: 'Human Resources', isActive: 1 },
-  { departmentId: 'DEPT4', name: 'Finance', isActive: 1 },
-];
+// === API CONFIGURATION ===
+const API_BASE_URL = 'http://localhost:3001/api';
 
 function DepartmentManager() {
-  const [departments, setDepartments] = useState(initialDepartments);
+  const [departments, setDepartments] = useState([]);
   const [form, setForm] = useState({ departmentId: '', name: '', isActive: 1 });
   const [editingId, setEditingId] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [dataLoading, setDataLoading] = useState(true);
   const [toast, setToast] = useState(null);
+
+  // === API FUNCTIONS ===
+  const fetchDepartments = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/departments`);
+      const data = await response.json();
+      if (data.success) {
+        setDepartments(data.data || []);
+      } else {
+        console.error('Failed to fetch departments:', data.message);
+      }
+    } catch (error) {
+      console.error('Error fetching departments:', error);
+    }
+  };
+
+  // === LOAD DATA ON COMPONENT MOUNT ===
+  useEffect(() => {
+    const loadData = async () => {
+      setDataLoading(true);
+      await fetchDepartments();
+      setDataLoading(false);
+    };
+
+    loadData();
+  }, []);
 
   const showToast = (message, type = 'success') => {
     setToast({ message, type });
@@ -24,26 +47,39 @@ function DepartmentManager() {
     e.preventDefault();
     if (!form.departmentId.trim() || !form.name.trim()) return;
     
-    // Check if DEPARTMENT ID already exists
-    if (departments.find(dep => dep.departmentId === form.departmentId)) {
-      showToast('รหัสแผนกนี้มีอยู่แล้ว', 'error');
-      return;
+    setLoading(true);
+    
+    try {
+      const newDepartment = {
+        departmentId: form.departmentId,
+        name: form.name,
+        isActive: parseInt(form.isActive)
+      };
+      
+      const response = await fetch(`${API_BASE_URL}/departments`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(newDepartment)
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        await fetchDepartments(); // Refresh data from server
+        setForm({ departmentId: '', name: '', isActive: 1 });
+        setEditingId(null);
+        showToast('เพิ่มแผนกเรียบร้อยแล้ว');
+      } else {
+        showToast(data.message || 'เกิดข้อผิดพลาดในการเพิ่มข้อมูล', 'error');
+      }
+    } catch (error) {
+      console.error('Error adding department:', error);
+      showToast('เกิดข้อผิดพลาดในการเพิ่มข้อมูล', 'error');
     }
     
-    setLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 300));
-    
-    const newDepartment = {
-      departmentId: form.departmentId,
-      name: form.name,
-      isActive: parseInt(form.isActive)
-    };
-    
-    setDepartments([...departments, newDepartment]);
-    setForm({ departmentId: '', name: '', isActive: 1 });
-    setEditingId(null);
     setLoading(false);
-    showToast('เพิ่มแผนกเรียบร้อยแล้ว');
   };
 
   const handleEdit = (dep) => {
@@ -55,27 +91,63 @@ function DepartmentManager() {
     e.preventDefault();
     
     setLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 300));
     
-    setDepartments(departments.map(dep => 
-      dep.departmentId === editingId 
-        ? { 
-            departmentId: form.departmentId, 
-            name: form.name, 
-            isActive: parseInt(form.isActive) 
-          } 
-        : dep
-    ));
-    setEditingId(null);
-    setForm({ departmentId: '', name: '', isActive: 1 });
+    try {
+      const updatedDepartment = {
+        name: form.name,
+        isActive: parseInt(form.isActive)
+      };
+      
+      const response = await fetch(`${API_BASE_URL}/departments/${editingId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updatedDepartment)
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        await fetchDepartments(); // Refresh data from server
+        setEditingId(null);
+        setForm({ departmentId: '', name: '', isActive: 1 });
+        showToast('แก้ไขข้อมูลเรียบร้อยแล้ว');
+      } else {
+        showToast(data.message || 'เกิดข้อผิดพลาดในการแก้ไขข้อมูล', 'error');
+      }
+    } catch (error) {
+      console.error('Error updating department:', error);
+      showToast('เกิดข้อผิดพลาดในการแก้ไขข้อมูล', 'error');
+    }
+    
     setLoading(false);
-    showToast('แก้ไขข้อมูลเรียบร้อยแล้ว');
   };
 
-  const handleDelete = (departmentId) => {
+  const handleDelete = async (departmentId) => {
     if (!window.confirm('ลบแผนกนี้?')) return;
-    setDepartments(departments.filter(dep => dep.departmentId !== departmentId));
-    showToast('ลบข้อมูลเรียบร้อยแล้ว');
+    
+    setLoading(true);
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/departments/${departmentId}`, {
+        method: 'DELETE'
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        await fetchDepartments(); // Refresh data from server
+        showToast('ลบข้อมูลเรียบร้อยแล้ว');
+      } else {
+        showToast(data.message || 'เกิดข้อผิดพลาดในการลบข้อมูล', 'error');
+      }
+    } catch (error) {
+      console.error('Error deleting department:', error);
+      showToast('เกิดข้อผิดพลาดในการลบข้อมูล', 'error');
+    }
+    
+    setLoading(false);
   };
 
   return (
@@ -102,15 +174,6 @@ function DepartmentManager() {
           </>
         )}
       </div>
-      
-      {/* Keep existing add button structure for backward compatibility */}
-      {!editingId && false && (
-        <div style={{ marginBottom: 16 }}>
-          <button type="button" className="em-btn primary" onClick={() => setEditingId('new')}>
-            <span style={{ fontSize: 16 }}>+</span> เพิ่มแผนก
-          </button>
-        </div>
-      )}
 
       {/* Form for adding/editing */}
       {(editingId === 'new' || editingId) && (

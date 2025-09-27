@@ -10,8 +10,6 @@ const EmployeeDetail = ({ employee, onClose }) => (
         <div className="em-modal-col">
           <div><b>Username:</b> {employee.username}</div>
           <div><b>ชื่อ:</b> {employee.name}</div>
-          <div><b>เบอร์โทร:</b> {(employee.phones && employee.phones.join(', ')) || '-'}</div>
-          <div><b>อีเมล:</b> {employee.email || '-'}</div>
         </div>
         <div className="em-modal-col">
           <div><b>ตำแหน่ง:</b> {employee.position}</div>
