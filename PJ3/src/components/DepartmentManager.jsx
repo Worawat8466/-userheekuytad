@@ -2,14 +2,15 @@ import React, { useState } from 'react';
 import '../pages/PersonPage.css';
 
 const initialDepartments = [
-  { id: 1, name: 'ฝ่ายปฏิบัติการ' },
-  { id: 2, name: 'ฝ่ายบุคคล' },
-  { id: 3, name: 'ฝ่ายการเงิน' },
+  { departmentId: 'DEPT1', name: 'Sales', isActive: 1 },
+  { departmentId: 'DEPT2', name: 'IT', isActive: 1 },
+  { departmentId: 'DEPT3', name: 'Human Resources', isActive: 1 },
+  { departmentId: 'DEPT4', name: 'Finance', isActive: 1 },
 ];
 
 function DepartmentManager() {
   const [departments, setDepartments] = useState(initialDepartments);
-  const [form, setForm] = useState({ id: '', name: '' });
+  const [form, setForm] = useState({ departmentId: '', name: '', isActive: 1 });
   const [editingId, setEditingId] = useState(null);
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState(null);
@@ -21,22 +22,33 @@ function DepartmentManager() {
 
   const handleAdd = async (e) => {
     e.preventDefault();
-    if (!form.name.trim()) return;
+    if (!form.departmentId.trim() || !form.name.trim()) return;
+    
+    // Check if DEPARTMENT ID already exists
+    if (departments.find(dep => dep.departmentId === form.departmentId)) {
+      showToast('รหัสแผนกนี้มีอยู่แล้ว', 'error');
+      return;
+    }
     
     setLoading(true);
     await new Promise(resolve => setTimeout(resolve, 300));
     
-    const newId = form.id ? parseInt(form.id) : Date.now();
-    setDepartments([...departments, { id: newId, name: form.name }]);
-    setForm({ id: '', name: '' });
+    const newDepartment = {
+      departmentId: form.departmentId,
+      name: form.name,
+      isActive: parseInt(form.isActive)
+    };
+    
+    setDepartments([...departments, newDepartment]);
+    setForm({ departmentId: '', name: '', isActive: 1 });
     setEditingId(null);
     setLoading(false);
     showToast('เพิ่มแผนกเรียบร้อยแล้ว');
   };
 
   const handleEdit = (dep) => {
-    setEditingId(dep.id);
-    setForm({ id: dep.id, name: dep.name });
+    setEditingId(dep.departmentId);
+    setForm({ departmentId: dep.departmentId, name: dep.name, isActive: dep.isActive });
   };
 
   const handleUpdate = async (e) => {
@@ -45,17 +57,24 @@ function DepartmentManager() {
     setLoading(true);
     await new Promise(resolve => setTimeout(resolve, 300));
     
-    const updatedId = form.id ? parseInt(form.id) : editingId;
-    setDepartments(departments.map(dep => dep.id === editingId ? { ...dep, id: updatedId, name: form.name } : dep));
+    setDepartments(departments.map(dep => 
+      dep.departmentId === editingId 
+        ? { 
+            departmentId: form.departmentId, 
+            name: form.name, 
+            isActive: parseInt(form.isActive) 
+          } 
+        : dep
+    ));
     setEditingId(null);
-    setForm({ id: '', name: '' });
+    setForm({ departmentId: '', name: '', isActive: 1 });
     setLoading(false);
     showToast('แก้ไขข้อมูลเรียบร้อยแล้ว');
   };
 
-  const handleDelete = (id) => {
+  const handleDelete = (departmentId) => {
     if (!window.confirm('ลบแผนกนี้?')) return;
-    setDepartments(departments.filter(dep => dep.id !== id));
+    setDepartments(departments.filter(dep => dep.departmentId !== departmentId));
     showToast('ลบข้อมูลเรียบร้อยแล้ว');
   };
 
@@ -98,14 +117,15 @@ function DepartmentManager() {
         <div style={{ marginBottom: 24, padding: 16, background: '#23252B', borderRadius: 8 }}>
           <form onSubmit={editingId === 'new' ? handleAdd : handleUpdate}>
             <div style={{ marginBottom: 12 }}>
-              <label className="em-input-label">ID (ถ้าไม่ระบุจะ auto generate)</label>
+              <label className="em-input-label">รหัสแผนก (DEPT1, DEPT2, ฯลฯ)</label>
               <input 
-                value={form.id} 
-                onChange={e => setForm({ ...form, id: e.target.value })} 
-                placeholder="ID" 
+                value={form.departmentId} 
+                onChange={e => setForm({ ...form, departmentId: e.target.value.toUpperCase() })} 
+                placeholder="เช่น DEPT5" 
                 className="em-modal-input" 
-                style={{ width: '120px' }} 
-                type="number" 
+                style={{ width: '200px' }} 
+                maxLength={5}
+                disabled={editingId !== 'new'}
               />
             </div>
             <div style={{ marginBottom: 12 }}>
@@ -116,7 +136,20 @@ function DepartmentManager() {
                 placeholder="ชื่อแผนก" 
                 className="em-modal-input" 
                 style={{ width: '300px' }} 
+                maxLength={20}
               />
+            </div>
+            <div style={{ marginBottom: 12 }}>
+              <label className="em-input-label">สถานะ</label>
+              <select 
+                value={form.isActive} 
+                onChange={e => setForm({ ...form, isActive: parseInt(e.target.value) })} 
+                className="em-modal-input" 
+                style={{ width: '150px' }}
+              >
+                <option value={1}>ใช้งาน (1)</option>
+                <option value={0}>ไม่ใช้งาน (0)</option>
+              </select>
             </div>
             <div>
               <button type="submit" className="em-modal-btn" disabled={loading}>
@@ -131,7 +164,7 @@ function DepartmentManager() {
               </button>
               <button 
                 type="button" 
-                onClick={() => { setEditingId(null); setForm({ id: '', name: '' }); }} 
+                onClick={() => { setEditingId(null); setForm({ departmentId: '', name: '', isActive: 1 }); }} 
                 className="em-modal-btn cancel"
                 disabled={loading}
               >
@@ -146,25 +179,38 @@ function DepartmentManager() {
         <table className="em-table">
           <thead>
             <tr>
-              <th style={{textAlign:'center'}}>ID</th>
+              <th style={{textAlign:'center'}}>รหัสแผนก</th>
               <th style={{textAlign:'center'}}>ชื่อแผนก</th>
+              <th style={{textAlign:'center'}}>สถานะ</th>
               <th className="center">การจัดการ</th>
             </tr>
           </thead>
           <tbody>
             {departments.map(dep => (
-              <tr key={dep.id}>
-                <td style={{textAlign:'center'}}>{dep.id}</td>
+              <tr key={dep.departmentId}>
+                <td style={{textAlign:'center', fontFamily: 'monospace', fontWeight: 'bold'}}>{dep.departmentId}</td>
                 <td style={{textAlign:'center'}}>{dep.name}</td>
+                <td style={{textAlign:'center'}}>
+                  <span style={{
+                    background: dep.isActive === 1 ? '#4CAF50' : '#F44336',
+                    color: 'white',
+                    padding: '2px 8px',
+                    borderRadius: '12px',
+                    fontSize: '12px',
+                    fontWeight: 'bold'
+                  }}>
+                    {dep.isActive === 1 ? 'ใช้งาน' : 'ไม่ใช้งาน'}
+                  </span>
+                </td>
                 <td className="center">
                   <button className="em-action-btn" onClick={() => handleEdit(dep)}>แก้ไข</button>
-                  <button className="em-action-btn delete" onClick={() => handleDelete(dep.id)}>ลบ</button>
+                  <button className="em-action-btn delete" onClick={() => handleDelete(dep.departmentId)}>ลบ</button>
                 </td>
               </tr>
             ))}
             {departments.length === 0 && (
               <tr>
-                <td colSpan={3}>
+                <td colSpan={4}>
                   <div className="em-empty-state">
                     <h3>ไม่มีข้อมูลแผนก</h3>
                     <p>เพิ่มแผนกใหม่เพื่อเริ่มต้นการจัดการ</p>

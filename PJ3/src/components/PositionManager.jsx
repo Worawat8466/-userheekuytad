@@ -2,9 +2,9 @@ import React, { useState } from 'react';
 import '../pages/PersonPage.css';
 
 const initialPositions = [
-  { id: 1, name: 'หัวหน้า', departmentId: 1, permissions: ['ดู', 'เพิ่ม', 'แก้ไข', 'ลบ'] },
-  { id: 2, name: 'ผู้จัดการ', departmentId: 2, permissions: ['ดู', 'แก้ไข'] },
-  { id: 3, name: 'พนักงาน', departmentId: 3, permissions: ['ดู'] },
+  { id: 1, name: 'Admin', departmentId: 1, permissions: ['ดู', 'เพิ่ม', 'แก้ไข', 'ลบ'] },
+  { id: 2, name: 'Manager', departmentId: 2, permissions: ['ดู', 'แก้ไข'] },
+  { id: 3, name: 'Staff', departmentId: 3, permissions: ['ดู'] },
 ];
 
 const allPermissions = ['ดู', 'เพิ่ม', 'แก้ไข', 'ลบ'];
