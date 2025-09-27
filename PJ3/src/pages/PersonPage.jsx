@@ -44,18 +44,45 @@ function PersonPage() {
   // === API FUNCTIONS ===
   const fetchPersons = async () => {
     try {
-      console.log('Fetching persons from:', `${API_BASE_URL}/persons`);
+      console.log('🔄 Fetching persons from:', `${API_BASE_URL}/persons`);
       const response = await fetch(`${API_BASE_URL}/persons`);
+      console.log('📡 Response status:', response.status, response.statusText);
       const data = await response.json();
-      console.log('Persons API response:', data);
+      console.log('📄 Persons API response:', data);
       if (data.success) {
         setEmployees(data.data || []);
-        console.log('Set employees to:', data.data);
+        console.log('✅ Set employees to:', data.data);
       } else {
-        console.error('Failed to fetch persons:', data.message);
+        console.error('❌ Failed to fetch persons:', data.message);
+        // Set mock data as fallback
+        const mockData = [
+          {
+            PERSONID: 'P000000001',
+            NAME: 'Mock User 1 (Fallback)', 
+            USERNAME: 'mock1',
+            SYSTEMPERMIS: 'A',
+            RANKID: 'RANK4',
+            DEPARTMENTID: 'DEPT2',
+            IS_ACTIVE: 1
+          }
+        ];
+        setEmployees(mockData);
       }
     } catch (error) {
-      console.error('Error fetching persons:', error);
+      console.error('🚨 Error fetching persons:', error);
+      // Set mock data as fallback
+      const mockData = [
+        {
+          PERSONID: 'P000000001',
+          NAME: 'Mock User 1 (Error Fallback)',
+          USERNAME: 'mock1', 
+          SYSTEMPERMIS: 'A',
+          RANKID: 'RANK4',
+          DEPARTMENTID: 'DEPT2',
+          IS_ACTIVE: 1
+        }
+      ];
+      setEmployees(mockData);
     }
   };
 
@@ -351,9 +378,24 @@ function PersonPage() {
     return matchesSearch && matchesFilter;
   });
 
+  console.log('=== DEBUG INFO ===');
   console.log('Current employees:', employees);
+  console.log('Employees length:', employees.length);
   console.log('Filtered employees:', filteredEmployees);
+  console.log('Filtered length:', filteredEmployees.length);
   console.log('Search:', search, 'Filter:', filter);
+  console.log('dataLoading:', dataLoading);
+  
+  // Debug each employee
+  employees.forEach((emp, index) => {
+    console.log(`Employee ${index}:`, {
+      name: emp.NAME || emp.name,
+      username: emp.USERNAME || emp.username,
+      personId: emp.PERSONID || emp.personId,
+      isActive: emp.IS_ACTIVE !== undefined ? emp.IS_ACTIVE : emp.isActive,
+      systemPermis: emp.SYSTEMPERMIS || emp.systemPermis
+    });
+  });
 
   // === RENDER ===
 
