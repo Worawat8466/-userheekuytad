@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import DepartmentManager from './DepartmentManager';
 import PositionManager from './PositionManager';
 import './EmployeeManager.css';
+import logoImg from '../images/logo.png';
 // Avatar removed per request
 
 const sidebarMenu = [
@@ -174,7 +175,7 @@ function EmployeeManager() {
       <div className="em-sidebar">
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 32 }}>
           <div className="em-sidebar-logo">
-            <img src="/logo.png" alt="logo" className="em-logo-img" />
+            <img src={logoImg} alt="logo" className="em-logo-img" />
           </div>
           <div className="em-sidebar-title">Admin Panel</div>
         </div>
