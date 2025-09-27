@@ -1,12 +1,21 @@
+// === IMPORTS ===
 import React from 'react';
 
-// หน้า Schedule - ตารางเวลา
+// === SCHEDULE PAGE COMPONENT ===
 function SchedulePage() {
+  // === RENDER ===
   return (
     <div style={{ padding: 32, color: '#fff' }}>
-      <h2 style={{ marginBottom: 24, fontSize: 24, fontWeight: 'bold' }}>
+      {/* Page Header */}
+      <h2 style={{ 
+        marginBottom: 24, 
+        fontSize: 24, 
+        fontWeight: 'bold' 
+      }}>
         ตารางเวลา (Schedule)
       </h2>
+      
+      {/* Content Area */}
       <div style={{ 
         background: '#23252B', 
         padding: 24, 

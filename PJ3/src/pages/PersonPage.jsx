@@ -1,12 +1,10 @@
-
-
-// === การ Import ===
+// === IMPORTS ===
 import React, { useState } from 'react';
 import DepartmentManager from '../components/DepartmentManager';
 import PositionManager from '../components/PositionManager';
 import './PersonPage.css';
 
-// === ข้อมูลคงที่ ===
+// === CONSTANTS & INITIAL DATA ===
 
 const initialEmployees = [
   {
@@ -42,63 +40,69 @@ const initialEmployees = [
 ];
 
 function PersonPage() {
-  // === State สำหรับการนำทาง ===
-  const [activePage, setActivePage] = useState('employee'); // หน้าปัจจุบัน (employee/department/position)
+  // === NAVIGATION STATE ===
+  const [activePage, setActivePage] = useState('employee');
 
-  // === State สำหรับข้อมูลพนักงาน ===
-  const [employees, setEmployees] = useState(initialEmployees); // รายการพนักงานทั้งหมด
-  const [form, setForm] = useState({ 
-    username: '', password: '', name: '', phones: [''], 
-    email: '', position: '', department: '' 
-  }); // ข้อมูลในฟอร์ม
-  const [editingId, setEditingId] = useState(null); // ID ของพนักงานที่กำลังแก้ไข
+  // === EMPLOYEE DATA STATE ===
+  const [employees, setEmployees] = useState(initialEmployees);
+  const [form, setForm] = useState({
+    username: '', 
+    password: '', 
+    name: '', 
+    phones: [''], 
+    email: '', 
+    position: '', 
+    department: ''
+  });
+  const [editingId, setEditingId] = useState(null);
 
-  // === State สำหรับการค้นหาและกรอง ===
-  const [search, setSearch] = useState('');      // คำค้นหา
-  const [filter, setFilter] = useState('All');   // ตัวกรองตำแหน่ง
+  // === SEARCH & FILTER STATE ===
+  const [search, setSearch] = useState('');
+  const [filter, setFilter] = useState('All');
 
-  // === State สำหรับ Modal/Dialog ===
-  const [showForm, setShowForm] = useState(false);     // แสดงฟอร์มเพิ่ม/แก้ไข
-  const [showDetail, setShowDetail] = useState(false); // แสดงรายละเอียดพนักงาน
-  const [detailEmp, setDetailEmp] = useState(null);    // ข้อมูลพนักงานที่แสดงรายละเอียด
+  // === MODAL STATE ===
+  const [showForm, setShowForm] = useState(false);
+  const [showDetail, setShowDetail] = useState(false);
+  const [detailEmp, setDetailEmp] = useState(null);
 
-  // === State สำหรับ UX ===
-  const [loading, setLoading] = useState(false);       // สถานะโหลด
-  const [toast, setToast] = useState(null);            // ข้อความแจ้งเตือน
-
-  // === ข้อมูลตายตัว ===
-  const positions = ['All', 'Admin', 'Manager', 'Staff'];  // ตำแหน่งทั้งหมด
-  const departments = ['Operations', 'HR', 'Finance'];       // แผนกทั้งหมด
-  const [formErrors, setFormErrors] = useState({             // ข้อผิดพลาดในฟอร์ม
-    username: '', password: '', name: '', phone: '', 
-    email: '', position: '', department: '' 
+  // === UX STATE ===
+  const [loading, setLoading] = useState(false);
+  const [toast, setToast] = useState(null);
+  const [formErrors, setFormErrors] = useState({
+    username: '', 
+    password: '', 
+    name: '', 
+    phone: '', 
+    email: '', 
+    position: '', 
+    department: ''
   });
 
-  // === ฟังก์ชันจัดการฟอร์ม ===
-  // อัปเดตข้อมูลในฟอร์ม
+  // === STATIC DATA ===
+  const positions = ['All', 'Admin', 'Manager', 'Staff'];
+  const departments = ['Operations', 'HR', 'Finance'];
+
+  // === FORM HANDLERS ===
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  // จัดการเบอร์โทรศัพท์
   const handlePhoneChange = (index, value) => {
     const phones = [...form.phones];
     phones[index] = value;
     setForm({ ...form, phones });
   };
 
-  // เพิ่มเบอร์โทรศัพท์ใหม่
   const addPhone = () => {
     setForm({ ...form, phones: [...form.phones, ''] });
   };
 
-  // ลบเบอร์โทรศัพท์
   const removePhone = (index) => {
     const phones = form.phones.filter((_, i) => i !== index);
     setForm({ ...form, phones: phones.length ? phones : [''] });
   };
 
-  // === ฟังก์ชันตรวจสอบข้อมูล ===
+  // === VALIDATION FUNCTIONS ===
   const validateEmail = (email) => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   };
@@ -108,7 +112,6 @@ function PersonPage() {
     return digits.length >= 7;
   };
 
-  // ตรวจสอบความถูกต้องของฟอร์มทั้งหมด
   const validateForm = () => {
     const errors = { 
       username: '', password: '', name: '', phone: '', 
@@ -143,12 +146,13 @@ function PersonPage() {
     return Object.values(errors).every(v => !v);
   };
 
-  // === ฟังก์ชัน Toast Notification ===
+  // === UTILITY FUNCTIONS ===
   const showToast = (message, type = 'success') => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3000);
   };
 
+  // === CRUD OPERATIONS ===
   const handleAdd = async (e) => {
     e.preventDefault();
     if (!form.username || !form.name || !form.position || !form.email || !form.department) return;
@@ -210,134 +214,268 @@ function PersonPage() {
     showToast('ลบข้อมูลเรียบร้อยแล้ว');
   };
 
-  // exportCSV removed per request
+  // === DATA FILTERING ===
+  const filteredEmployees = employees.filter((emp) => {
+    const matchesFilter = filter === 'All' || emp.position === filter;
+    const matchesSearch = 
+      emp.username.includes(search) || 
+      emp.name.toLowerCase().includes(search.toLowerCase());
+    return matchesFilter && matchesSearch;
+  });
 
-  const filteredEmployees = employees.filter(
-    (emp) =>
-      (filter === 'All' || emp.position === filter) &&
-      (emp.username.includes(search) || emp.name.toLowerCase().includes(search.toLowerCase()))
-  );
 
 
-
+  // === RENDER ===
   return (
     <>
-      {/* Top Buttons and content */}
+      {/* Navigation Tabs */}
       <div className="em-top-btns">
-              <button onClick={() => setActivePage('employee')} className={`em-btn${activePage === 'employee' ? ' primary' : ''}`}>Person</button>
-              <button onClick={() => setActivePage('department')} className={`em-btn${activePage === 'department' ? ' primary' : ''}`}>Department</button>
-              <button onClick={() => setActivePage('position')} className={`em-btn${activePage === 'position' ? ' primary' : ''}`}>Position</button>
-              {activePage === 'employee' && (
-                <>
-                  <div style={{ flex: 1 }} />
-                  <button onClick={() => { setShowForm(true); setEditingId(null); setForm({ username: '', password: '', name: '', phones: [''], email: '', position: '', department: '' }); }} className="em-btn primary" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ fontSize: 20 }}>+</span> Add Person
-                  </button>
-                  <input
-                    type="text"
-                    placeholder="ค้นหา"
-                    value={search}
-                    onChange={e => setSearch(e.target.value)}
-                    className="em-search"
-                  />
-          <select value={filter} onChange={e => setFilter(e.target.value)} className="em-select">
-            {positions.map(pos => <option key={pos} value={pos}>{pos}</option>)}
-          </select>
-        </>
-      )}
+        <button 
+          onClick={() => setActivePage('employee')} 
+          className={`em-btn${activePage === 'employee' ? ' primary' : ''}`}
+        >
+          Person
+        </button>
+        <button 
+          onClick={() => setActivePage('department')} 
+          className={`em-btn${activePage === 'department' ? ' primary' : ''}`}
+        >
+          Department
+        </button>
+        <button 
+          onClick={() => setActivePage('position')} 
+          className={`em-btn${activePage === 'position' ? ' primary' : ''}`}
+        >
+          Position
+        </button>
+        
+        {/* Employee Page Controls */}
+        {activePage === 'employee' && (
+          <>
+            <div style={{ flex: 1 }} />
+            <button 
+              onClick={() => { 
+                setShowForm(true); 
+                setEditingId(null); 
+                setForm({ 
+                  username: '', 
+                  password: '', 
+                  name: '', 
+                  phones: [''], 
+                  email: '', 
+                  position: '', 
+                  department: '' 
+                }); 
+              }} 
+              className="em-btn primary" 
+              style={{ display: 'flex', alignItems: 'center', gap: 8 }}
+            >
+              <span style={{ fontSize: 20 }}>+</span> Add Person
+            </button>
+            <input
+              type="text"
+              placeholder="ค้นหา"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="em-search"
+            />
+            <select 
+              value={filter} 
+              onChange={(e) => setFilter(e.target.value)} 
+              className="em-select"
+            >
+              {positions.map(pos => (
+                <option key={pos} value={pos}>{pos}</option>
+              ))}
+            </select>
+          </>
+        )}
       </div>
 
+      {/* Employee Table */}
       {activePage === 'employee' && (
-              <div className="em-table-wrap">
-                <table className="em-table">
-                  <thead>
-                    <tr>
-                      <th>Username</th>
-                      <th>ชื่อ</th>
-                      <th>แผนก</th>
-                      <th className="center">การจัดการ</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredEmployees.map(emp => (
-                      <tr key={emp.id}>
-                        <td>{emp.username}</td>
-                        <td>{emp.name}</td>
-                        <td>{emp.department || '-'}</td>
-                        <td className="center">
-                          <button className="em-action-btn" onClick={() => handleEdit(emp)}>แก้ไข</button>
-                          <button className="em-action-btn view" onClick={() => { setDetailEmp(emp); setShowDetail(true); }}>ดูข้อมูล</button>
-                          <button className="em-action-btn delete" onClick={() => handleDelete(emp.id)}>ลบ</button>
-                        </td>
-                      </tr>
-                    ))}
-                    {filteredEmployees.length === 0 && (
-                      <tr>
-                        <td colSpan={4}>
-                          <div className="em-empty-state">
-                            <h3>ไม่พบข้อมูลพนักงาน</h3>
-                            <p>ลองปรับเปลี่ยนคำค้นหาหรือตัวกรอง หรือเพิ่มพนักงานใหม่</p>
-                          </div>
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            )}
+        <div className="em-table-wrap">
+          <table className="em-table">
+            <thead>
+              <tr>
+                <th>Username</th>
+                <th>ชื่อ</th>
+                <th>แผนก</th>
+                <th className="center">การจัดการ</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredEmployees.map(emp => (
+                <tr key={emp.id}>
+                  <td>{emp.username}</td>
+                  <td>{emp.name}</td>
+                  <td>{emp.department || '-'}</td>
+                  <td className="center">
+                    <button 
+                      className="em-action-btn" 
+                      onClick={() => handleEdit(emp)}
+                    >
+                      แก้ไข
+                    </button>
+                    <button 
+                      className="em-action-btn view" 
+                      onClick={() => { 
+                        setDetailEmp(emp); 
+                        setShowDetail(true); 
+                      }}
+                    >
+                      ดูข้อมูล
+                    </button>
+                    <button 
+                      className="em-action-btn delete" 
+                      onClick={() => handleDelete(emp.id)}
+                    >
+                      ลบ
+                    </button>
+                  </td>
+                </tr>
+              ))}
+              {filteredEmployees.length === 0 && (
+                <tr>
+                  <td colSpan={4}>
+                    <div className="em-empty-state">
+                      <h3>ไม่พบข้อมูลพนักงาน</h3>
+                      <p>ลองปรับเปลี่ยนคำค้นหาหรือตัวกรอง หรือเพิ่มพนักงานใหม่</p>
+                    </div>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
 
+      {/* Department & Position Management */}
       {activePage === 'department' && <DepartmentManager />}
       {activePage === 'position' && <PositionManager />}
 
-        {/* Form Modal */}
+        {/* Add/Edit Form Modal */}
         {showForm && (
           <div className="em-modal-bg">
-            <form onSubmit={editingId ? handleUpdate : handleAdd} className="em-modal em-modal--wide">
-              <div className="em-modal-title">{editingId ? 'แก้ไขข้อมูลบุคคล' : 'เพิ่มบุคคล'}</div>
+            <form 
+              onSubmit={editingId ? handleUpdate : handleAdd} 
+              className="em-modal em-modal--wide"
+            >
+              <div className="em-modal-title">
+                {editingId ? 'แก้ไขข้อมูลบุคคล' : 'เพิ่มบุคคล'}
+              </div>
+              
               <div className="em-modal-grid">
+                {/* Left Column */}
                 <div className="em-modal-col">
                   <label className="em-input-label">Username</label>
-                  <input name="username" placeholder="Username" value={form.username} onChange={handleChange} className="em-modal-input" required />
-                  {formErrors.username && <div className="em-error">{formErrors.username}</div>}
+                  <input 
+                    name="username" 
+                    placeholder="Username" 
+                    value={form.username} 
+                    onChange={handleChange} 
+                    className="em-modal-input" 
+                    required 
+                  />
+                  {formErrors.username && (
+                    <div className="em-error">{formErrors.username}</div>
+                  )}
 
                   <label className="em-input-label">ชื่อ</label>
-                  <input name="name" placeholder="ชื่อ" value={form.name} onChange={handleChange} className="em-modal-input" required />
-                  {formErrors.name && <div className="em-error">{formErrors.name}</div>}
+                  <input 
+                    name="name" 
+                    placeholder="ชื่อ" 
+                    value={form.name} 
+                    onChange={handleChange} 
+                    className="em-modal-input" 
+                    required 
+                  />
+                  {formErrors.name && (
+                    <div className="em-error">{formErrors.name}</div>
+                  )}
 
                   <label className="em-input-label">เบอร์โทร</label>
                   <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                    <input name="phones[0]" placeholder="เบอร์โทร" value={form.phones[0]} onChange={e => handlePhoneChange(0, e.target.value)} className="em-modal-input" required />
+                    <input 
+                      name="phones[0]" 
+                      placeholder="เบอร์โทร" 
+                      value={form.phones[0]} 
+                      onChange={(e) => handlePhoneChange(0, e.target.value)} 
+                      className="em-modal-input" 
+                      required 
+                    />
                   </div>
-                  {formErrors.phone && <div className="em-error">{formErrors.phone}</div>}
+                  {formErrors.phone && (
+                    <div className="em-error">{formErrors.phone}</div>
+                  )}
 
                   <label className="em-input-label">อีเมล</label>
-                  <input name="email" placeholder="อีเมล" value={form.email} onChange={handleChange} className="em-modal-input" required />
-                  {formErrors.email && <div className="em-error">{formErrors.email}</div>}
+                  <input 
+                    name="email" 
+                    placeholder="อีเมล" 
+                    value={form.email} 
+                    onChange={handleChange} 
+                    className="em-modal-input" 
+                    required 
+                  />
+                  {formErrors.email && (
+                    <div className="em-error">{formErrors.email}</div>
+                  )}
                 </div>
 
+                {/* Right Column */}
                 <div className="em-modal-col">
                   <label className="em-input-label">รหัสผ่าน</label>
-                  <input name="password" placeholder="Password" value={form.password} onChange={handleChange} className="em-modal-input" required />
-                  {formErrors.password && <div className="em-error">{formErrors.password}</div>}
+                  <input 
+                    name="password" 
+                    type="password"
+                    placeholder="Password" 
+                    value={form.password} 
+                    onChange={handleChange} 
+                    className="em-modal-input" 
+                    required 
+                  />
+                  {formErrors.password && (
+                    <div className="em-error">{formErrors.password}</div>
+                  )}
 
                   <label className="em-input-label">ตำแหน่ง</label>
-                  <select name="position" value={form.position} onChange={handleChange} className="em-modal-select" required>
+                  <select 
+                    name="position" 
+                    value={form.position} 
+                    onChange={handleChange} 
+                    className="em-modal-select" 
+                    required
+                  >
                     <option value="">เลือกตำแหน่ง</option>
-                    {positions.filter(p => p !== 'All').map(p => <option key={p} value={p}>{p}</option>)}
+                    {positions.filter(p => p !== 'All').map(p => (
+                      <option key={p} value={p}>{p}</option>
+                    ))}
                   </select>
-                  {formErrors.position && <div className="em-error">{formErrors.position}</div>}
+                  {formErrors.position && (
+                    <div className="em-error">{formErrors.position}</div>
+                  )}
 
                   <label className="em-input-label">แผนก</label>
-                  <select name="department" value={form.department} onChange={handleChange} className="em-modal-select" required>
+                  <select 
+                    name="department" 
+                    value={form.department} 
+                    onChange={handleChange} 
+                    className="em-modal-select" 
+                    required
+                  >
                     <option value="">เลือกแผนก</option>
-                    {departments.map(d => <option key={d} value={d}>{d}</option>)}
+                    {departments.map(d => (
+                      <option key={d} value={d}>{d}</option>
+                    ))}
                   </select>
-                  {formErrors.department && <div className="em-error">{formErrors.department}</div>}
-
-                  {/* additional phones can be edited below if present */}
+                  {formErrors.department && (
+                    <div className="em-error">{formErrors.department}</div>
+                  )}
                 </div>
               </div>
 
+              {/* Form Buttons */}
               <div className="em-modal-btns">
                 <button type="submit" className="em-modal-btn" disabled={loading}>
                   {loading ? (
@@ -349,22 +487,44 @@ function PersonPage() {
                     editingId ? 'บันทึก' : 'เพิ่ม'
                   )}
                 </button>
-                <button type="button" onClick={() => { setShowForm(false); setEditingId(null); setForm({ username: '', password: '', name: '', phones: [''], email: '', position: '', department: '' }); }} className="em-modal-btn cancel" disabled={loading}>ยกเลิก</button>
+                <button 
+                  type="button" 
+                  onClick={() => { 
+                    setShowForm(false); 
+                    setEditingId(null); 
+                    setForm({ 
+                      username: '', 
+                      password: '', 
+                      name: '', 
+                      phones: [''], 
+                      email: '', 
+                      position: '', 
+                      department: '' 
+                    }); 
+                  }} 
+                  className="em-modal-btn cancel" 
+                  disabled={loading}
+                >
+                  ยกเลิก
+                </button>
               </div>
             </form>
           </div>
         )}
 
-        {/* Detail Modal */}
+        {/* Employee Detail Modal */}
         {showDetail && detailEmp && (
           <div className="em-modal-bg">
             <div className="em-modal em-modal--wide">
               <div className="em-modal-title">ข้อมูลบุคคล</div>
+              
               <div className="em-modal-grid">
                 <div className="em-modal-col">
                   <div><b>Username:</b> {detailEmp.username}</div>
                   <div><b>ชื่อ:</b> {detailEmp.name}</div>
-                  <div><b>เบอร์โทร:</b> {(detailEmp.phones && detailEmp.phones.join(', ')) || '-'}</div>
+                  <div>
+                    <b>เบอร์โทร:</b> {(detailEmp.phones && detailEmp.phones.join(', ')) || '-'}
+                  </div>
                   <div><b>อีเมล:</b> {detailEmp.email || '-'}</div>
                 </div>
                 <div className="em-modal-col">
@@ -373,8 +533,18 @@ function PersonPage() {
                   <div><b>รหัสผ่าน:</b> {detailEmp.password}</div>
                 </div>
               </div>
+              
               <div className="em-modal-btns">
-                <button type="button" onClick={() => { setShowDetail(false); setDetailEmp(null); }} className="em-modal-btn cancel">ปิด</button>
+                <button 
+                  type="button" 
+                  onClick={() => { 
+                    setShowDetail(false); 
+                    setDetailEmp(null); 
+                  }} 
+                  className="em-modal-btn cancel"
+                >
+                  ปิด
+                </button>
               </div>
             </div>
           </div>
