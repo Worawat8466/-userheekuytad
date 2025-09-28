@@ -44,7 +44,7 @@ function EmployeeManager() {
 
   // === State สำหรับการค้นหาและกรอง ===
   const [search, setSearch] = useState('');      // คำค้นหา
-  const [filter, setFilter] = useState('All');   // (legacy, ไม่ใช้แล้วหลังย้ายไป Advanced Filter)
+   // ตัวกรองหลักย้ายไปที่ Advanced Filter แล้ว
   // Advanced search state
   const [advOpen, setAdvOpen] = useState(false);
   const [advFilters, setAdvFilters] = useState({
@@ -101,7 +101,7 @@ function EmployeeManager() {
             };
           });
           setEmployees(mapped);
-          console.log('EmployeeManager: loaded persons from API ->', mapped);
+           // loaded persons
         } else {
           console.warn('EmployeeManager: persons API failed:', json.message);
         }
@@ -130,7 +130,7 @@ function EmployeeManager() {
           setDeptOptions(depts);
         }
       } catch (e) {
-        console.error('EmployeeManager: fetch persons error', e);
+         console.error('Fetch persons error', e);
       }
     };
     load();
@@ -367,8 +367,7 @@ function EmployeeManager() {
     const matchSearch = !q || [username, name, personId, deptName, rankName].some(v => v.includes(q));
 
     // การกรองตามแผนก: filter เก็บ departmentId หรือ 'All'
-  // ยกเลิก dropdown เดิม ใช้เฉพาะ advanced filters
-  const matchDept = true;
+  const matchDept = true; // ยกเลิก dropdown เดิม ใช้เฉพาะ advanced filters
 
   // Advanced filters (AND logic)
     const advDeptOk = !advFilters.departmentId || deptId === advFilters.departmentId.toLowerCase();
@@ -377,6 +376,7 @@ function EmployeeManager() {
     const advActiveOk = !advFilters.isActive || String(emp.isActive) === advFilters.isActive;
 
     return matchSearch && matchDept && advDeptOk && advRankOk && advPermOk && advActiveOk;
+  return matchSearch && advDeptOk && advRankOk && advPermOk && advActiveOk;
   });
 
   // ...existing code...
