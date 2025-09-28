@@ -448,7 +448,8 @@ function EmployeeManager() {
                         <td>{getDeptNameById(emp.department, emp.departmentName)}</td>
                         <td>
                           <span style={{
-                            background: emp.isActive === 1 ? '#2e7d32' : '#c62828',
+                            /* ปรับสีให้ตรงกับแผนกและตำแหน่ง (#4CAF50 / #F44336) */
+                            background: emp.isActive === 1 ? '#4CAF50' : '#F44336',
                             color: 'white',
                             padding: '2px 8px',
                             borderRadius: '12px',
@@ -570,7 +571,8 @@ function EmployeeManager() {
                   <div>
                     <b>สถานะ:</b> {' '}
                     <span style={{
-                      background: detailEmp.isActive === 1 ? '#2e7d32' : '#c62828',
+                      /* ปรับสีให้ตรงกับแผนกและตำแหน่ง (#4CAF50 / #F44336) */
+                      background: detailEmp.isActive === 1 ? '#4CAF50' : '#F44336',
                       color: 'white',
                       padding: '2px 8px',
                       borderRadius: '12px',

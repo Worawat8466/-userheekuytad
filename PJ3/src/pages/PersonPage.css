@@ -306,6 +306,21 @@ body {
   gap: 8px;
 }
 
+/* ป้ายสถานะใช้ร่วมทุกตาราง */
+.em-badge { 
+  display: inline-block; 
+  padding: 2px 8px; 
+  border-radius: 12px; 
+  font-size: 12px; 
+  font-weight: bold; 
+  color: #fff; 
+  line-height: 1.2;
+}
+.em-badge.active { background: #4CAF50; }
+.em-badge.inactive { background: #F44336; }
+.em-badge.admin { background: #FF5722; }
+.em-badge.user { background: #2196F3; }
+
 .em-action-btn {
   background: #0A3D2E;
   color: #fff;

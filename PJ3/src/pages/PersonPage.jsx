@@ -568,28 +568,14 @@ function PersonPage() {
                       <td>{emp.name}</td>
                       <td style={{fontFamily: 'monospace'}}>{emp.username}</td>
                       <td>
-                        <span style={{
-                          background: emp.systemPermis === 'A' ? '#FF5722' : '#2196F3',
-                          color: 'white',
-                          padding: '2px 8px',
-                          borderRadius: '12px',
-                          fontSize: '12px',
-                          fontWeight: 'bold'
-                        }}>
+                        <span className={`em-badge ${emp.systemPermis === 'A' ? 'admin' : 'user'}`}>
                           {emp.systemPermis === 'A' ? 'Admin' : 'User'}
                         </span>
                       </td>
                       <td>{getRankName(emp.rankId, emp.rankName)}</td>
                       <td>{getDepartmentName(emp.departmentId, emp.departmentName)}</td>
                       <td>
-                        <span style={{
-                          background: emp.isActive === 1 ? '#4CAF50' : '#F44336',
-                          color: 'white',
-                          padding: '2px 8px',
-                          borderRadius: '12px',
-                          fontSize: '12px',
-                          fontWeight: 'bold'
-                        }}>
+                        <span className={`em-badge ${emp.isActive === 1 ? 'active' : 'inactive'}`}>
                           {emp.isActive === 1 ? 'ใช้งาน' : 'ไม่ใช้งาน'}
                         </span>
                       </td>
@@ -852,14 +838,7 @@ function PersonPage() {
                   <div className="em-detail-item">
                     <span className="em-detail-label">สิทธิ์ระบบ:</span>
                     <span className="em-detail-value">
-                      <span style={{
-                        background: detailEmp.systemPermis === 'A' ? '#FF5722' : '#2196F3',
-                        color: 'white',
-                        padding: '2px 8px',
-                        borderRadius: '12px',
-                        fontSize: '12px',
-                        fontWeight: 'bold'
-                      }}>
+                      <span className={`em-badge ${detailEmp.systemPermis === 'A' ? 'admin' : 'user'}`}>
                         {getSystemPermissionText(detailEmp.systemPermis)}
                       </span>
                     </span>
@@ -881,14 +860,7 @@ function PersonPage() {
                   <div className="em-detail-item">
                     <span className="em-detail-label">สถานะ:</span>
                     <span className="em-detail-value">
-                      <span style={{
-                        background: detailEmp.isActive === 1 ? '#4CAF50' : '#F44336',
-                        color: 'white',
-                        padding: '2px 8px',
-                        borderRadius: '12px',
-                        fontSize: '12px',
-                        fontWeight: 'bold'
-                      }}>
+                      <span className={`em-badge ${detailEmp.isActive === 1 ? 'active' : 'inactive'}`}>
                         {detailEmp.isActive === 1 ? 'ใช้งาน' : 'ไม่ใช้งาน'}
                       </span>
                     </span>
