@@ -44,7 +44,15 @@ function EmployeeManager() {
 
   // === State สำหรับการค้นหาและกรอง ===
   const [search, setSearch] = useState('');      // คำค้นหา
-  const [filter, setFilter] = useState('All');   // ตัวกรอง (ไม่ได้ใช้จริง ปล่อยผ่าน)
+  const [filter, setFilter] = useState('All');   // (legacy, ไม่ใช้แล้วหลังย้ายไป Advanced Filter)
+  // Advanced search state
+  const [advOpen, setAdvOpen] = useState(false);
+  const [advFilters, setAdvFilters] = useState({
+    departmentId: '',
+    positionId: '',
+    systemPermis: '',
+    isActive: ''
+  });
 
   // === State สำหรับ Modal/Dialog ===
   const [showForm, setShowForm] = useState(false);     // แสดงฟอร์มเพิ่ม/แก้ไข
@@ -52,8 +60,8 @@ function EmployeeManager() {
   const [detailEmp, setDetailEmp] = useState(null);    // ข้อมูลพนักงานที่แสดงรายละเอียด
 
   // === ข้อมูลตายตัว ===
-  // ตัวเลือก Filter (เดิมจาก mock)
-  const positionsFilter = ['All', 'Admin', 'Manager', 'Staff'];
+  // ตัวเลือก Filter: ใช้แผนกแทน (All + departmentId)
+  // จะสร้าง option จาก deptOptions ภายหลัง
   // ตัวเลือกที่ดึงจาก API
   const [rankOptions, setRankOptions] = useState([]);           // [{rankId, name, isActive}]
   const [deptOptions, setDeptOptions] = useState([]);           // [{departmentId, name, isActive}]
@@ -343,13 +351,32 @@ function EmployeeManager() {
 
   // exportCSV removed per request
 
+  // ฟังก์ชันช่วยตรวจว่าเป็น Manager หรือ Staff จากชื่อ/รหัสตำแหน่ง
+  const isManagerTitle = (rankName = '') => /manager|หัวหน้า|mgr/i.test(rankName);
+
   const filteredEmployees = employees.filter((emp) => {
-    const uname = (emp.username || '').toLowerCase();
-    const nm = (emp.name || '').toLowerCase();
-    const q = (search || '').toLowerCase();
-    // เกณฑ์กรองตำแหน่ง เดิมใช้กับ mock เท่านั้น ให้ผ่านทั้งหมดไว้ก่อน
-    const matchFilter = filter === 'All' || emp.position === filter;
-    return matchFilter && (uname.includes(q) || nm.includes(q));
+    const q = (search || '').trim().toLowerCase();
+    const username = (emp.username || '').toLowerCase();
+    const name = (emp.name || '').toLowerCase();
+    const personId = (emp.personId || emp.id || '').toLowerCase();
+    const deptId = (emp.department || '').toLowerCase();
+    const deptName = (getDeptNameById(emp.department, emp.departmentName) || '').toLowerCase();
+    const rankName = (getRankNameById(emp.position, emp.rankName) || '').toLowerCase();
+
+    // การค้นหา: username / name / personId / ชื่อแผนก / ชื่อตำแหน่ง
+    const matchSearch = !q || [username, name, personId, deptName, rankName].some(v => v.includes(q));
+
+    // การกรองตามแผนก: filter เก็บ departmentId หรือ 'All'
+  // ยกเลิก dropdown เดิม ใช้เฉพาะ advanced filters
+  const matchDept = true;
+
+  // Advanced filters (AND logic)
+    const advDeptOk = !advFilters.departmentId || deptId === advFilters.departmentId.toLowerCase();
+    const advRankOk = !advFilters.positionId || (emp.position || '').toLowerCase() === advFilters.positionId.toLowerCase();
+    const advPermOk = !advFilters.systemPermis || emp.systemPermis === advFilters.systemPermis;
+    const advActiveOk = !advFilters.isActive || String(emp.isActive) === advFilters.isActive;
+
+    return matchSearch && matchDept && advDeptOk && advRankOk && advPermOk && advActiveOk;
   });
 
   // ...existing code...
@@ -419,12 +446,83 @@ function EmployeeManager() {
                     onChange={e => setSearch(e.target.value)}
                     className="em-search"
                   />
-                  <select value={filter} onChange={e => setFilter(e.target.value)} className="em-select">
-                    {positionsFilter.map(pos => <option key={pos} value={pos}>{pos}</option>)}
-                  </select>
+                  <button
+                    type="button"
+                    className="em-btn"
+                    style={{ display:'flex', alignItems:'center', gap:6, background: advOpen ? '#0E4A35' : '#23252B' }}
+                    onClick={() => setAdvOpen(o => !o)}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 4h18l-7 8v6l-4 2v-8z"/></svg>
+                    Filter
+                  </button>
                 </>
               )}
             </div>
+
+            {activePage === 'employee' && advOpen && (
+              <div className="em-adv-panel">
+                <div className="em-adv-row">
+                  <div className="em-adv-group">
+                    <label>แผนก</label>
+                    <select
+                      value={advFilters.departmentId}
+                      onChange={e => setAdvFilters(f => ({ ...f, departmentId: e.target.value }))}
+                    >
+                      <option value="">-- ทั้งหมด --</option>
+                      {deptOptions.filter(d => d.isActive === 1).map(d => (
+                        <option key={d.departmentId} value={d.departmentId}>{d.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="em-adv-group">
+                    <label>ตำแหน่ง</label>
+                    <select
+                      value={advFilters.positionId}
+                      onChange={e => setAdvFilters(f => ({ ...f, positionId: e.target.value }))}
+                    >
+                      <option value="">-- ทั้งหมด --</option>
+                      {rankOptions.filter(r => r.isActive === 1).map(r => (
+                        <option key={r.rankId} value={r.rankId}>{r.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="em-adv-group">
+                    <label>สิทธิ์ระบบ</label>
+                    <select
+                      value={advFilters.systemPermis}
+                      onChange={e => setAdvFilters(f => ({ ...f, systemPermis: e.target.value }))}
+                    >
+                      <option value="">-- ทั้งหมด --</option>
+                      <option value="A">Admin</option>
+                      <option value="U">User</option>
+                    </select>
+                  </div>
+                  <div className="em-adv-group">
+                    <label>สถานะ</label>
+                    <select
+                      value={advFilters.isActive}
+                      onChange={e => setAdvFilters(f => ({ ...f, isActive: e.target.value }))}
+                    >
+                      <option value="">-- ทั้งหมด --</option>
+                      <option value="1">ใช้งาน</option>
+                      <option value="0">ไม่ใช้งาน</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="em-adv-actions">
+                  <button
+                    type="button"
+                    className="em-btn"
+                    onClick={() => setAdvFilters({ departmentId:'', positionId:'', systemPermis:'', isActive:'' })}
+                  >รีเซ็ต</button>
+                  <button
+                    type="button"
+                    className="em-btn primary"
+                    onClick={() => setAdvOpen(false)}
+                  >ปิด</button>
+                </div>
+              </div>
+            )}
 
             {activePage === 'employee' && (
               <div className="em-table-wrap">

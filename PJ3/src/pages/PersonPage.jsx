@@ -33,6 +33,14 @@ function PersonPage() {
   // === SEARCH & FILTER STATE ===
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('All');
+  // === ADVANCED SEARCH STATE ===
+  const [advOpen, setAdvOpen] = useState(false);
+  const [advFilters, setAdvFilters] = useState({
+    departmentId: '',
+    rankId: '',
+    systemPermis: '',
+    isActive: '' // '' | '1' | '0'
+  });
 
   // === MODAL STATE ===
   const [showForm, setShowForm] = useState(false);
@@ -417,8 +425,16 @@ function PersonPage() {
       (filter === 'Admin' && systemPermis === 'A') ||
       (filter === 'User' && systemPermis === 'U');
 
+    // Advanced filters (AND logic if filled)
+    const advDeptOk = !advFilters.departmentId || emp.departmentId === advFilters.departmentId;
+    const advRankOk = !advFilters.rankId || emp.rankId === advFilters.rankId;
+    const advPermOk = !advFilters.systemPermis || emp.systemPermis === advFilters.systemPermis;
+    const advActiveOk = !advFilters.isActive || String(emp.isActive) === advFilters.isActive;
+
+    const advAllOk = advDeptOk && advRankOk && advPermOk && advActiveOk;
+
     console.log('Matches:', { matchesSearch, matchesFilter, search, filter });
-    const result = matchesSearch && matchesFilter;
+  const result = matchesSearch && matchesFilter && advAllOk;
     console.log('Filter result for', name, ':', result);
     
     return result;
@@ -525,7 +541,83 @@ function PersonPage() {
                 <option value="Admin">ผู้ดูแลระบบ</option>
                 <option value="User">ผู้ใช้งาน</option>
               </select>
+
+              <button 
+                type="button" 
+                className="em-btn" 
+                style={{ display:'flex', alignItems:'center', gap:6, background: advOpen ? '#0E4A35' : '#23252B' }}
+                onClick={() => setAdvOpen(o => !o)}
+                title="Filter"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 4h18l-7 8v6l-4 2v-8z"/></svg>
+                Filter
+              </button>
             </div>
+
+            {advOpen && (
+              <div className="em-adv-panel">
+                <div className="em-adv-row">
+                  <div className="em-adv-group">
+                    <label>แผนก</label>
+                    <select 
+                      value={advFilters.departmentId}
+                      onChange={e => setAdvFilters(f => ({ ...f, departmentId: e.target.value }))}
+                    >
+                      <option value="">-- ทั้งหมด --</option>
+                      {departments.filter(d => d.isActive === 1).map(d => (
+                        <option key={d.departmentId} value={d.departmentId}>{d.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="em-adv-group">
+                    <label>ตำแหน่ง</label>
+                    <select 
+                      value={advFilters.rankId}
+                      onChange={e => setAdvFilters(f => ({ ...f, rankId: e.target.value }))}
+                    >
+                      <option value="">-- ทั้งหมด --</option>
+                      {ranks.filter(r => r.isActive === 1).map(r => (
+                        <option key={r.rankId} value={r.rankId}>{r.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="em-adv-group">
+                    <label>สิทธิ์ระบบ</label>
+                    <select 
+                      value={advFilters.systemPermis}
+                      onChange={e => setAdvFilters(f => ({ ...f, systemPermis: e.target.value }))}
+                    >
+                      <option value="">-- ทั้งหมด --</option>
+                      <option value="A">Admin</option>
+                      <option value="U">User</option>
+                    </select>
+                  </div>
+                  <div className="em-adv-group">
+                    <label>สถานะ</label>
+                    <select 
+                      value={advFilters.isActive}
+                      onChange={e => setAdvFilters(f => ({ ...f, isActive: e.target.value }))}
+                    >
+                      <option value="">-- ทั้งหมด --</option>
+                      <option value="1">ใช้งาน</option>
+                      <option value="0">ไม่ใช้งาน</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="em-adv-actions">
+                  <button
+                    type="button"
+                    className="em-btn"
+                    onClick={() => setAdvFilters({ departmentId:'', rankId:'', systemPermis:'', isActive:'' })}
+                  >รีเซ็ต</button>
+                  <button
+                    type="button"
+                    className="em-btn primary"
+                    onClick={() => setAdvOpen(false)}
+                  >ปิด</button>
+                </div>
+              </div>
+            )}
 
             {/* Debug Info */}
             <div style={{
