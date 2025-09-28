@@ -61,6 +61,9 @@
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
+  /* ป้องกันการเลื่อนทั้งหน้า ให้ลูกภายในเป็นตัวสกรอลล์แทน */
+  overflow: hidden;
+  min-height: 0; /* สำคัญเพื่อให้ .em-table-wrap ใช้ flex:1 แล้วสกรอลล์ได้ */
 }
 
 .em-title {
@@ -110,8 +113,22 @@
 .em-table-wrap {
   background: #23252B;
   border-radius: 16px;
-  overflow: hidden;
+  flex: 1;               /* กินพื้นที่ที่เหลือใต้ปุ่ม */
+  min-height: 0;         /* ให้ flex child สกรอลล์ได้ */
+  overflow: auto;        /* สกรอลล์เฉพาะภายในตาราง */
+  position: relative;
+  scrollbar-width: thin;
+  scrollbar-color: #444 #1e1f23;
 }
+
+/* Scrollbar (WebKit) */
+.em-table-wrap::-webkit-scrollbar { width: 10px; }
+.em-table-wrap::-webkit-scrollbar-track { background: #1e1f23; border-radius: 8px; }
+.em-table-wrap::-webkit-scrollbar-thumb { background: #3a3d44; border-radius: 8px; }
+.em-table-wrap::-webkit-scrollbar-thumb:hover { background: #4a4d55; }
+
+/* ทำหัวตารางให้ sticky เวลาเลื่อน */
+.em-table thead th { position: sticky; top: 0; z-index: 2; }
 
 .em-table {
   width: 100%;

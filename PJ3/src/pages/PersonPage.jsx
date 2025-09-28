@@ -38,6 +38,7 @@ function PersonPage() {
   const [showForm, setShowForm] = useState(false);
   const [showDetail, setShowDetail] = useState(false);
   const [detailEmp, setDetailEmp] = useState(null);
+  const [showPassword, setShowPassword] = useState(false);
 
   // === UX STATE ===
   const [loading, setLoading] = useState(false);
@@ -58,14 +59,13 @@ function PersonPage() {
     personId: p.PERSONID ?? p.personId ?? '',
     name: p.NAME ?? p.name ?? '',
     username: p.USERNAME ?? p.username ?? '',
+    password: p.PASSWORD ?? p.password ?? '',
     systemPermis: p.SYSTEMPERMIS ?? p.systemPermis ?? 'U',
     rankId: p.RANKID ?? p.rankId ?? '',
     departmentId: p.DEPARTMENTID ?? p.departmentId ?? '',
     isActive: normalizeIsActive(p.IS_ACTIVE ?? p.isActive),
     rankName: p.RANK_NAME ?? p.rankName ?? undefined,
-    departmentName: p.DEPARTMENT_NAME ?? p.departmentName ?? undefined,
-    // Do not expose password from API in UI state
-    password: ''
+    departmentName: p.DEPARTMENT_NAME ?? p.departmentName ?? undefined
   });
 
   const normalizeDepartment = (d) => ({
@@ -84,21 +84,33 @@ function PersonPage() {
   const fetchPersons = async () => {
     try {
       console.log('🔄 Fetching persons from:', `${API_BASE_URL}/persons`);
+      setDataLoading(true);
       const response = await fetch(`${API_BASE_URL}/persons`);
       console.log('📡 Response status:', response.status, response.statusText);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
       const data = await response.json();
       console.log('📄 Persons API response:', data);
-      if (data.success) {
-        const normalized = (data.data || []).map(normalizePerson);
+      
+      if (data.success && Array.isArray(data.data)) {
+        console.log('🔢 Raw data count:', data.data.length);
+        const normalized = data.data.map(normalizePerson);
+        console.log('✨ Normalized data:', normalized);
+        console.log('✨ Normalized count:', normalized.length);
         setEmployees(normalized);
-        console.log('✅ Set employees to (normalized):', normalized);
+        console.log('✅ Set employees to state');
       } else {
-        console.error('❌ Failed to fetch persons:', data.message);
+        console.error('❌ Invalid API response structure:', data);
         setEmployees([]);
       }
     } catch (error) {
       console.error('🚨 Error fetching persons:', error);
       setEmployees([]);
+    } finally {
+      setDataLoading(false);
     }
   };
 
@@ -138,14 +150,19 @@ function PersonPage() {
   useEffect(() => {
     console.log('🔄 useEffect triggered - loading data');
     const loadData = async () => {
+      console.log('📋 Starting data load sequence...');
       setDataLoading(true);
-      await Promise.all([
-        fetchPersons(),
-        fetchDepartments(),
-        fetchRanks()
-      ]);
-      setDataLoading(false);
-      console.log('✅ Data loading completed');
+      try {
+        await fetchPersons();
+        await fetchDepartments();
+        await fetchRanks();
+        console.log('✅ All data loaded successfully');
+      } catch (error) {
+        console.error('❌ Error in data loading:', error);
+      } finally {
+        setDataLoading(false);
+        console.log('✅ Data loading sequence completed');
+      }
     };
 
     loadData();
@@ -161,15 +178,22 @@ function PersonPage() {
   });
 
   // === UTILITY FUNCTIONS ===
-  const getRankName = (rankId, fallbackLabel) => {
-    if (!rankId) return 'ไม่ระบุ';
+  const getRankName = (rankId, rankName) => {
+    // ใช้ชื่อที่ join มาจาก API ก่อน
+    if (rankName) return rankName;
+    // ถ้าไม่มีให้ lookup จาก ranks array
+    if (!rankId) return 'ไม่ระบุตำแหน่ง';
     const rank = ranks.find(r => r.rankId === rankId);
-    return fallbackLabel || (rank ? rank.name : 'ไม่ระบุ');
+    return rank ? rank.name : `ไม่พบตำแหน่ง (${rankId})`;
   };
 
-  const getDepartmentName = (departmentId, fallbackLabel) => {
+  const getDepartmentName = (departmentId, departmentName) => {
+    // ใช้ชื่อที่ join มาจาก API ก่อน
+    if (departmentName) return departmentName;
+    // ถ้าไม่มีให้ lookup จาก departments array
+    if (!departmentId) return 'ไม่ระบุแผนก';
     const department = departments.find(d => d.departmentId === departmentId);
-    return fallbackLabel || (department ? department.name : 'ไม่ระบุ');
+    return department ? department.name : `ไม่พบแผนก (${departmentId})`;
   };
 
   const getSystemPermissionText = (systemPermis) => {
@@ -203,9 +227,8 @@ function PersonPage() {
       rankId: '', departmentId: '' 
     };
     
-    if (!form.personId || form.personId.trim() === '') {
-      errors.personId = 'โปรดระบุรหัสบุคคล';
-    } else if (employees.find(emp => emp.personId === form.personId && emp.personId !== editingId)) {
+    // อนุญาตให้เว้นว่างตอนเพิ่ม (จะ gen อัตโนมัติ) แต่ถ้ากรอกมาก็ตรวจซ้ำ
+    if (form.personId && employees.find(emp => emp.personId === form.personId && emp.personId !== editingId)) {
       errors.personId = 'รหัสบุคคลนี้มีอยู่แล้ว';
     }
     if (!form.name || form.name.trim() === '') {
@@ -373,13 +396,18 @@ function PersonPage() {
 
   // === FILTER & SEARCH ===
   const filteredEmployees = employees.filter(emp => {
+    console.log('🔍 Filtering employee:', emp);
+    
     const name = emp.name || '';
     const username = emp.username || '';
     const personId = emp.personId || '';
     const isActive = emp.isActive;
     const systemPermis = emp.systemPermis;
 
-    const matchesSearch = name.toLowerCase().includes(search.toLowerCase()) ||
+    console.log('Employee data:', { name, username, personId, isActive, systemPermis });
+
+    const matchesSearch = !search || search === '' ||
+      name.toLowerCase().includes(search.toLowerCase()) ||
       username.toLowerCase().includes(search.toLowerCase()) ||
       personId.toLowerCase().includes(search.toLowerCase());
 
@@ -389,21 +417,22 @@ function PersonPage() {
       (filter === 'Admin' && systemPermis === 'A') ||
       (filter === 'User' && systemPermis === 'U');
 
-    return matchesSearch && matchesFilter;
+    console.log('Matches:', { matchesSearch, matchesFilter, search, filter });
+    const result = matchesSearch && matchesFilter;
+    console.log('Filter result for', name, ':', result);
+    
+    return result;
   });
 
-  console.log('=== DEBUG INFO ===');
-  console.log('Current employees:', employees);
+  console.log('=== RENDER DEBUG INFO ===');
+  console.log('Current employees state:', employees);
   console.log('Employees length:', employees.length);
+  console.log('Current search:', search);
+  console.log('Current filter:', filter);
   console.log('Filtered employees:', filteredEmployees);
   console.log('Filtered length:', filteredEmployees.length);
-  console.log('Search:', search, 'Filter:', filter);
   console.log('dataLoading:', dataLoading);
-  
-  // Debug each employee
-  employees.forEach((emp, index) => {
-    console.log(`Employee ${index}:`, emp);
-  });
+  console.log('========================');
 
   // === RENDER ===
 
@@ -460,7 +489,7 @@ function PersonPage() {
 
         {/* Main Content */}
         {activePage === 'employee' && (
-          <div>
+          <div className="em-employee-section">
             {/* Controls */}
             <div className="em-controls">
               <button 
@@ -496,6 +525,25 @@ function PersonPage() {
                 <option value="Admin">ผู้ดูแลระบบ</option>
                 <option value="User">ผู้ใช้งาน</option>
               </select>
+            </div>
+
+            {/* Debug Info */}
+            <div style={{
+              fontSize: '12px', 
+              color: '#666', 
+              margin: '10px 0',
+              padding: '8px',
+              backgroundColor: '#f5f5f5',
+              borderRadius: '4px'
+            }}>
+              📊 <strong>Debug Info:</strong> 
+              Raw: {employees.length} คน | 
+              Filter: {filteredEmployees.length} คน | 
+              Search: "{search || 'ไม่มี'}" | 
+              Filter: {filter} |
+              Loading: {dataLoading ? 'Yes' : 'No'}
+              <br/>
+              🔍 <strong>Sample:</strong> {employees.slice(0, 2).map(e => `${e.name}(${e.personId})`).join(', ')}
             </div>
 
             {/* Employee Table */}
@@ -756,6 +804,7 @@ function PersonPage() {
                   onClick={() => {
                     setShowDetail(false);
                     setDetailEmp(null);
+                    setShowPassword(false);
                   }}
                 >
                   ×
@@ -781,6 +830,26 @@ function PersonPage() {
                     </span>
                   </div>
                   <div className="em-detail-item">
+                    <span className="em-detail-label">รหัสผ่าน:</span>
+                    <span className="em-detail-value" style={{fontFamily: 'monospace', display: 'flex', alignItems: 'center', gap: '8px'}}>
+                      <span>{showPassword ? detailEmp.password : '••••••••'}</span>
+                      <button 
+                        onClick={() => setShowPassword(!showPassword)}
+                        style={{
+                          background: 'none',
+                          border: '1px solid #ddd',
+                          borderRadius: '4px',
+                          padding: '2px 6px',
+                          cursor: 'pointer',
+                          fontSize: '11px',
+                          color: '#666'
+                        }}
+                      >
+                        {showPassword ? '🙈' : '👁️'}
+                      </button>
+                    </span>
+                  </div>
+                  <div className="em-detail-item">
                     <span className="em-detail-label">สิทธิ์ระบบ:</span>
                     <span className="em-detail-value">
                       <span style={{
@@ -798,14 +867,14 @@ function PersonPage() {
                   <div className="em-detail-item">
                     <span className="em-detail-label">ตำแหน่ง:</span>
                     <span className="em-detail-value">
-                      {getRankName(detailEmp.rankId)} 
+                      {getRankName(detailEmp.rankId, detailEmp.rankName)} 
                       {detailEmp.rankId && <span style={{color: '#888', marginLeft: 8}}>({detailEmp.rankId})</span>}
                     </span>
                   </div>
                   <div className="em-detail-item">
                     <span className="em-detail-label">แผนก:</span>
                     <span className="em-detail-value">
-                      {getDepartmentName(detailEmp.departmentId)} 
+                      {getDepartmentName(detailEmp.departmentId, detailEmp.departmentName)} 
                       {detailEmp.departmentId && <span style={{color: '#888', marginLeft: 8}}>({detailEmp.departmentId})</span>}
                     </span>
                   </div>
@@ -833,6 +902,7 @@ function PersonPage() {
                   onClick={() => {
                     setShowDetail(false);
                     setDetailEmp(null);
+                    setShowPassword(false);
                   }}
                 >
                   ปิด

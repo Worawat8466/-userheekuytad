@@ -15,10 +15,10 @@ body {
 
 .em-root {
   display: flex;
-  min-height: 100vh;
+  height: 100vh; /* ยึดเต็มหน้าจอ และจะให้ตารางเป็นคนสกรอลล์ */
   min-width: 100vw;
   width: 100vw;
-  height: 100vh;
+  overflow: hidden; /* กันไม่ให้หน้าเลื่อน */
   background: #181A20;
   color: #fff;
   font-family: sans-serif;
@@ -103,6 +103,16 @@ body {
   display: flex;
   flex-direction: column;
   position: relative;
+  overflow: hidden; /* ไม่ให้ content เลื่อน main เอง */
+  min-height: 0; /* เพื่อให้ section ด้านในสกรอลล์เอง */
+}
+
+/* โซน employee ทั้งหมด: controls + ตาราง */
+.em-employee-section {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0; /* สำคัญเพื่อให้ลูก flex ที่สกรอลล์ได้ */
 }
 
 /* Loading Spinner */
@@ -235,8 +245,19 @@ body {
 .em-table-wrap {
   background: #23252B;
   border-radius: 16px;
-  overflow: hidden;
+  overflow: auto;
+  flex: 1; /* กินพื้นที่ที่เหลือทั้งหมดใต้ปุ่ม */
+  min-height: 0; /* ให้ flex child สกรอลล์เอง */
+  position: relative;
+  scrollbar-width: thin;
+  scrollbar-color: #444 #1e1f23;
 }
+
+/* ปรับแต่ง scrollbar (สำหรับ WebKit) */
+.em-table-wrap::-webkit-scrollbar { width: 10px; }
+.em-table-wrap::-webkit-scrollbar-track { background: #1e1f23; border-radius: 8px; }
+.em-table-wrap::-webkit-scrollbar-thumb { background: #3a3d44; border-radius: 8px; }
+.em-table-wrap::-webkit-scrollbar-thumb:hover { background: #4a4d55; }
 
 .em-table {
   width: 100%;
@@ -251,6 +272,9 @@ body {
   height: 56px;
   font-weight: 600;
   font-size: 14px;
+  position: sticky;
+  top: 0;
+  z-index: 2;
 }
 
 .em-table td {

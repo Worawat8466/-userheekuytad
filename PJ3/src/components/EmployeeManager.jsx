@@ -19,7 +19,8 @@ const sidebarMenu = [
 
 // ลบ initialEmployees ออก ไม่ต้องมีโค้ดนี้อีกต่อไป
 
-const API_BASE_URL = 'http://localhost:3001/api';
+// ใช้ proxy ของ Vite เพื่อความเสถียร (กำหนดไว้ใน vite.config.js)
+const API_BASE_URL = '/api';
 
 function EmployeeManager() {
   // === State สำหรับการนำทาง ===
@@ -29,14 +30,21 @@ function EmployeeManager() {
   // === State สำหรับข้อมูลพนักงาน ===
   const [employees, setEmployees] = useState([]); // รายการพนักงานทั้งหมด - ดึงจาก API
   const [form, setForm] = useState({ 
-    username: '', password: '', name: '', 
-    position: '', department: '' 
+    personId: '',
+    username: '',
+    password: '',
+    name: '', 
+    // เก็บเป็นรหัส (ID) เพื่อยิง API ได้ตรง
+    position: '', // rankId
+    department: '', // departmentId
+    systemPermis: 'U',
+    isActive: 1
   }); // ข้อมูลในฟอร์ม
   const [editingId, setEditingId] = useState(null); // ID ของพนักงานที่กำลังแก้ไข
 
   // === State สำหรับการค้นหาและกรอง ===
   const [search, setSearch] = useState('');      // คำค้นหา
-  const [filter, setFilter] = useState('All');   // ตัวกรองตำแหน่ง
+  const [filter, setFilter] = useState('All');   // ตัวกรอง (ไม่ได้ใช้จริง ปล่อยผ่าน)
 
   // === State สำหรับ Modal/Dialog ===
   const [showForm, setShowForm] = useState(false);     // แสดงฟอร์มเพิ่ม/แก้ไข
@@ -44,32 +52,74 @@ function EmployeeManager() {
   const [detailEmp, setDetailEmp] = useState(null);    // ข้อมูลพนักงานที่แสดงรายละเอียด
 
   // === ข้อมูลตายตัว ===
-  const positions = ['All', 'Admin', 'Manager', 'Staff'];  // ตำแหน่งทั้งหมด
-  const departments = ['Operations', 'HR', 'Finance'];       // แผนกทั้งหมด
+  // ตัวเลือก Filter (เดิมจาก mock)
+  const positionsFilter = ['All', 'Admin', 'Manager', 'Staff'];
+  // ตัวเลือกที่ดึงจาก API
+  const [rankOptions, setRankOptions] = useState([]);           // [{rankId, name, isActive}]
+  const [deptOptions, setDeptOptions] = useState([]);           // [{departmentId, name, isActive}]
   const [formErrors, setFormErrors] = useState({             // ข้อผิดพลาดในฟอร์ม
-    username: '', password: '', name: '', 
-    position: '', department: '' 
+    personId: '', username: '', password: '', name: '', 
+    position: '', department: '', systemPermis: '', isActive: '' 
   });
 
   // === ดึงข้อมูลจาก API ===
   useEffect(() => {
     const load = async () => {
       try {
+        // ดึงบุคคล
         const res = await fetch(`${API_BASE_URL}/persons`);
         const json = await res.json();
         if (json.success) {
           // แปลงข้อมูลให้เข้ากับโครงสร้างเดิมของตารางนี้
-          const mapped = (json.data || []).map(p => ({
-            id: p.PERSONID ?? p.personId ?? crypto.randomUUID?.() ?? Math.random(),
-            username: p.USERNAME ?? p.username ?? '',
-            name: p.NAME ?? p.name ?? '',
-            // ในหน้านี้แสดงเป็นชื่อแผนกแบบสั้น ๆ ถ้ายังไม่มีชื่อใช้รหัสไปก่อน
-            department: p.DEPARTMENTID ?? p.departmentId ?? '-'
-          }));
+          const mapped = (json.data || []).map(p => {
+            const deptName = p.DEPARTMENT_NAME ?? p.departmentName;
+            const rankName = p.RANK_NAME ?? p.rankName;
+            return {
+              id: p.PERSONID ?? p.personId ?? crypto.randomUUID?.() ?? Math.random(),
+              personId: p.PERSONID ?? p.personId ?? undefined,
+              username: p.USERNAME ?? p.username ?? '',
+              name: p.NAME ?? p.name ?? '',
+              // เก็บรหัสไว้สำหรับ CRUD
+              department: p.DEPARTMENTID ?? p.departmentId ?? '', // departmentId
+              position: p.RANKID ?? p.rankId ?? '', // rankId
+              // เก็บรหัสผ่านจาก API (ถ้าส่งมา) เพื่อแสดงใน modal ตามที่ผู้ใช้ร้องขอ
+              password: p.PASSWORD ?? p.password ?? '',
+              // เพิ่มสิทธิ์และสถานะสำหรับการแสดงผลในตาราง/โมดอล
+              systemPermis: p.SYSTEMPERMIS ?? p.systemPermis ?? 'U',
+              isActive: (p.IS_ACTIVE === 1 || p.IS_ACTIVE === '1' || p.IS_ACTIVE === true) ? 1 : 0,
+              // เก็บชื่อเดิมไว้เผื่อใช้ต่อ
+              rankName: rankName,
+              departmentName: deptName
+            };
+          });
           setEmployees(mapped);
           console.log('EmployeeManager: loaded persons from API ->', mapped);
         } else {
           console.warn('EmployeeManager: persons API failed:', json.message);
+        }
+
+        // ดึงตัวเลือกตำแหน่ง
+        const rRes = await fetch(`${API_BASE_URL}/ranks`);
+        const rJson = await rRes.json();
+        if (rJson.success) {
+          const ranks = (rJson.data || []).map(r => ({
+            rankId: r.RANKID ?? r.rankId,
+            name: r.NAME ?? r.name,
+            isActive: (r.IS_ACTIVE === 1 || r.IS_ACTIVE === '1' || r.IS_ACTIVE === true) ? 1 : 0
+          }));
+          setRankOptions(ranks);
+        }
+
+        // ดึงตัวเลือกแผนก
+        const dRes = await fetch(`${API_BASE_URL}/departments`);
+        const dJson = await dRes.json();
+        if (dJson.success) {
+          const depts = (dJson.data || []).map(d => ({
+            departmentId: d.DEPARTMENTID ?? d.departmentId,
+            name: d.NAME ?? d.name,
+            isActive: (d.IS_ACTIVE === 1 || d.IS_ACTIVE === '1' || d.IS_ACTIVE === true) ? 1 : 0
+          }));
+          setDeptOptions(depts);
         }
       } catch (e) {
         console.error('EmployeeManager: fetch persons error', e);
@@ -77,6 +127,18 @@ function EmployeeManager() {
     };
     load();
   }, []);
+
+  // Helper: แปลง id -> ชื่อ สำหรับแสดงผล
+  const getRankNameById = (rankId, fallbackName) => {
+    if (fallbackName) return fallbackName;
+    const r = rankId && rankOptions.find(x => x.rankId === rankId);
+    return r ? r.name : (rankId || '-');
+  };
+  const getDeptNameById = (deptId, fallbackName) => {
+    if (fallbackName) return fallbackName;
+    const d = deptId && deptOptions.find(x => x.departmentId === deptId);
+    return d ? d.name : (deptId || '-');
+  };
 
   // === ฟังก์ชันจัดการฟอร์ม ===
   // อัปเดตข้อมูลในฟอร์ม
@@ -88,11 +150,12 @@ function EmployeeManager() {
   // ตรวจสอบความถูกต้องของฟอร์มทั้งหมด
   const validateForm = () => {
     const errors = { 
-      username: '', password: '', name: '', 
-      position: '', department: '' 
+      personId: '', username: '', password: '', name: '', 
+      position: '', department: '', systemPermis: '', isActive: '' 
     };
     
     // ตรวจสอบแต่ละฟิลด์
+    // เว้นว่างได้ (จะ generate อัตโนมัติ) หากกรอกมาก็ไม่ต้องตรวจอะไรเพิ่มที่นี่
     if (!form.username || form.username.trim().length < 3) {
       errors.username = 'โปรดระบุ Username อย่างน้อย 3 ตัวอักษร';
     }
@@ -108,54 +171,174 @@ function EmployeeManager() {
     if (!form.department || form.department === '') {
       errors.department = 'โปรดเลือกแผนก';
     }
+    if (!['A','U'].includes(form.systemPermis)) {
+      errors.systemPermis = 'โปรดเลือกสิทธิ์ระบบ';
+    }
+    if (!(String(form.isActive) === '1' || String(form.isActive) === '0')) {
+      errors.isActive = 'โปรดเลือกสถานะ';
+    }
     
     setFormErrors(errors);
     return Object.values(errors).every(v => !v);
   };
 
-  const handleAdd = (e) => {
+  const handleAdd = async (e) => {
     e.preventDefault();
-    if (!form.username || !form.name || !form.position || !form.department) return;
     if (!validateForm()) return;
-    setEmployees([
-      ...employees,
-      {
-        id: Date.now(),
+    try {
+      // ใช้ PERSONID จากฟอร์ม ถ้าไม่กรอกจะ generate ให้
+      let finalPersonId = form.personId;
+      if (!finalPersonId) {
+        const idRes = await fetch(`${API_BASE_URL}/persons/next-id/generate`);
+        const idJson = await idRes.json();
+        if (!idJson.success || !idJson.data?.personId) throw new Error('Generate ID failed');
+        finalPersonId = idJson.data.personId;
+      }
+
+      const payload = {
+        personId: finalPersonId,
+        name: form.name,
         username: form.username,
         password: form.password,
-        name: form.name,
-        position: form.position,
-        department: form.department,
-      },
-    ]);
-    setForm({ username: '', password: '', name: '', position: '', department: '' });
-    setShowForm(false);
+        systemPermis: form.systemPermis,
+        rankId: form.position || null,
+        departmentId: form.department || null,
+        isActive: parseInt(form.isActive)
+      };
+
+      const res = await fetch(`${API_BASE_URL}/persons`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const json = await res.json();
+      if (!json.success) throw new Error(json.message || 'Create failed');
+
+      // refresh list
+      const listRes = await fetch(`${API_BASE_URL}/persons`);
+      const listJson = await listRes.json();
+      if (listJson.success) {
+        const mapped = (listJson.data || []).map(p => ({
+          id: p.PERSONID,
+          personId: p.PERSONID,
+          username: p.USERNAME,
+          name: p.NAME,
+          department: p.DEPARTMENTID,
+          position: p.RANKID,
+          password: p.PASSWORD,
+          systemPermis: p.SYSTEMPERMIS,
+          isActive: (p.IS_ACTIVE === 1 || p.IS_ACTIVE === '1' || p.IS_ACTIVE === true) ? 1 : 0,
+          rankName: p.RANK_NAME,
+          departmentName: p.DEPARTMENT_NAME
+        }));
+        setEmployees(mapped);
+      }
+
+      setForm({ personId: '', username: '', password: '', name: '', position: '', department: '', systemPermis: 'U', isActive: 1 });
+      setShowForm(false);
+    } catch (err) {
+      console.error('Create person failed:', err);
+      alert('สร้างบุคคลไม่สำเร็จ: ' + (err.message || err));
+    }
   };
 
   const handleEdit = (emp) => {
-    setEditingId(emp.id);
-    setForm({ username: emp.username || '', password: emp.password || '', name: emp.name || '', position: emp.position || '', department: emp.department || '' });
+    // เก็บเป็น PERSONID สำหรับยิง PUT/DELETE
+    setEditingId(emp.personId || emp.id);
+    setForm({
+      personId: emp.personId || emp.id || '',
+      username: emp.username || '',
+      password: emp.password || '',
+      name: emp.name || '',
+      // เก็บเป็น id
+      position: emp.position || emp.rankId || '',
+      department: emp.department || emp.departmentId || '',
+      systemPermis: emp.systemPermis || 'U',
+      isActive: emp.isActive ?? 1
+    });
     setShowForm(true);
   };
 
-  const handleUpdate = (e) => {
+  const handleUpdate = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
-    setEmployees(
-      employees.map((emp) =>
-        emp.id === editingId
-          ? { ...emp, ...form }
-          : emp
-      )
-    );
-    setEditingId(null);
-    setForm({ username: '', password: '', name: '', position: '', department: '' });
-    setShowForm(false);
+    try {
+      const payload = {
+        name: form.name,
+        username: form.username,
+        password: form.password,
+        systemPermis: form.systemPermis,
+        rankId: form.position || null,
+        departmentId: form.department || null,
+        isActive: parseInt(form.isActive)
+      };
+      const res = await fetch(`${API_BASE_URL}/persons/${editingId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const json = await res.json();
+      if (!json.success) throw new Error(json.message || 'Update failed');
+
+      // refresh list
+      const listRes = await fetch(`${API_BASE_URL}/persons`);
+      const listJson = await listRes.json();
+      if (listJson.success) {
+        const mapped = (listJson.data || []).map(p => ({
+          id: p.PERSONID,
+          personId: p.PERSONID,
+          username: p.USERNAME,
+          name: p.NAME,
+          department: p.DEPARTMENTID,
+          position: p.RANKID,
+          password: p.PASSWORD,
+          systemPermis: p.SYSTEMPERMIS,
+          isActive: (p.IS_ACTIVE === 1 || p.IS_ACTIVE === '1' || p.IS_ACTIVE === true) ? 1 : 0,
+          rankName: p.RANK_NAME,
+          departmentName: p.DEPARTMENT_NAME
+        }));
+        setEmployees(mapped);
+      }
+
+      setEditingId(null);
+      setForm({ personId: '', username: '', password: '', name: '', position: '', department: '', systemPermis: 'U', isActive: 1 });
+      setShowForm(false);
+    } catch (err) {
+      console.error('Update person failed:', err);
+      alert('แก้ไขไม่สำเร็จ: ' + (err.message || err));
+    }
   };
 
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
+    const personId = id;
     if (!window.confirm('ยืนยันการลบพนักงานนี้?')) return;
-    setEmployees(employees.filter((emp) => emp.id !== id));
+    try {
+      const res = await fetch(`${API_BASE_URL}/persons/${personId}`, { method: 'DELETE' });
+      const json = await res.json();
+      if (!json.success) throw new Error(json.message || 'Delete failed');
+      // refresh list
+      const listRes = await fetch(`${API_BASE_URL}/persons`);
+      const listJson = await listRes.json();
+      if (listJson.success) {
+        const mapped = (listJson.data || []).map(p => ({
+          id: p.PERSONID,
+          personId: p.PERSONID,
+          username: p.USERNAME,
+          name: p.NAME,
+          department: p.DEPARTMENTID,
+          position: p.RANKID,
+          password: p.PASSWORD,
+          systemPermis: p.SYSTEMPERMIS,
+          isActive: (p.IS_ACTIVE === 1 || p.IS_ACTIVE === '1' || p.IS_ACTIVE === true) ? 1 : 0,
+          rankName: p.RANK_NAME,
+          departmentName: p.DEPARTMENT_NAME
+        }));
+        setEmployees(mapped);
+      }
+    } catch (err) {
+      console.error('Delete person failed:', err);
+      alert('ลบไม่สำเร็จ: ' + (err.message || err));
+    }
   };
 
   // exportCSV removed per request
@@ -209,7 +392,24 @@ function EmployeeManager() {
               {activePage === 'employee' && (
                 <>
                   <div style={{ flex: 1 }} />
-                  <button onClick={() => { setShowForm(true); setEditingId(null); setForm({ username: '', password: '', name: '', position: '', department: '' }); }} className="em-btn primary" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <button
+                    onClick={() => {
+                      setShowForm(true);
+                      setEditingId(null);
+                      setForm({
+                        personId: '',
+                        username: '',
+                        password: '',
+                        name: '',
+                        position: '',
+                        department: '',
+                        systemPermis: 'U',
+                        isActive: 1
+                      });
+                    }}
+                    className="em-btn primary"
+                    style={{ display: 'flex', alignItems: 'center', gap: 8 }}
+                  >
                     <span style={{ fontSize: 20 }}>+</span> เพิ่มบุคคล
                   </button>
                   <input
@@ -220,7 +420,7 @@ function EmployeeManager() {
                     className="em-search"
                   />
                   <select value={filter} onChange={e => setFilter(e.target.value)} className="em-select">
-                    {positions.map(pos => <option key={pos} value={pos}>{pos}</option>)}
+                    {positionsFilter.map(pos => <option key={pos} value={pos}>{pos}</option>)}
                   </select>
                 </>
               )}
@@ -233,7 +433,9 @@ function EmployeeManager() {
                     <tr>
                       <th>Username</th>
                       <th>ชื่อ</th>
+                      <th>ตำแหน่ง</th>
                       <th>แผนก</th>
+                      <th>สถานะ</th>
                       <th className="center">การจัดการ</th>
                     </tr>
                   </thead>
@@ -242,17 +444,30 @@ function EmployeeManager() {
                       <tr key={emp.id}>
                         <td>{emp.username}</td>
                         <td>{emp.name}</td>
-                        <td>{emp.department || '-'}</td>
+                        <td>{getRankNameById(emp.position, emp.rankName)}</td>
+                        <td>{getDeptNameById(emp.department, emp.departmentName)}</td>
+                        <td>
+                          <span style={{
+                            background: emp.isActive === 1 ? '#2e7d32' : '#c62828',
+                            color: 'white',
+                            padding: '2px 8px',
+                            borderRadius: '12px',
+                            fontSize: '12px',
+                            fontWeight: 'bold'
+                          }}>
+                            {emp.isActive === 1 ? 'ใช้งาน' : 'ไม่ใช้งาน'}
+                          </span>
+                        </td>
                         <td className="center">
                           <button className="em-action-btn" onClick={() => handleEdit(emp)}>แก้ไข</button>
                           <button className="em-action-btn view" onClick={() => { setDetailEmp(emp); setShowDetail(true); }}>ดูข้อมูล</button>
-                          <button className="em-action-btn delete" onClick={() => handleDelete(emp.id)}>ลบ</button>
+                          <button className="em-action-btn delete" onClick={() => handleDelete(emp.personId || emp.id)}>ลบ</button>
                         </td>
                       </tr>
                     ))}
                     {filteredEmployees.length === 0 && (
                       <tr>
-                        <td colSpan={4} style={{ textAlign: 'center', padding: '24px 0', color: '#888' }}>ไม่มีข้อมูลพนักงาน</td>
+                        <td colSpan={6} style={{ textAlign: 'center', padding: '24px 0', color: '#888' }}>ไม่มีข้อมูลพนักงาน</td>
                       </tr>
                     )}
                   </tbody>
@@ -275,6 +490,10 @@ function EmployeeManager() {
               <div className="em-modal-title">{editingId ? 'แก้ไขข้อมูลบุคคล' : 'เพิ่มบุคคล'}</div>
               <div className="em-modal-grid">
                 <div className="em-modal-col">
+                  <label className="em-input-label">PERSONID</label>
+                  <input name="personId" placeholder={editingId ? 'แก้ไขไม่ได้' : 'เช่น P000000001 (ว่าง = สร้างอัตโนมัติ)'} value={form.personId} onChange={handleChange} className="em-modal-input" disabled={!!editingId} />
+                  {formErrors.personId && <div className="em-error">{formErrors.personId}</div>}
+
                   <label className="em-input-label">Username</label>
                   <input name="username" placeholder="Username" value={form.username} onChange={handleChange} className="em-modal-input" required />
                   {formErrors.username && <div className="em-error">{formErrors.username}</div>}
@@ -292,16 +511,34 @@ function EmployeeManager() {
                   <label className="em-input-label">ตำแหน่ง</label>
                   <select name="position" value={form.position} onChange={handleChange} className="em-modal-select" required>
                     <option value="">เลือกตำแหน่ง</option>
-                    {positions.filter(p => p !== 'All').map(p => <option key={p} value={p}>{p}</option>)}
+                    {rankOptions.filter(r => r.isActive === 1).map(r => (
+                      <option key={r.rankId} value={r.rankId}>{r.name} ({r.rankId})</option>
+                    ))}
                   </select>
                   {formErrors.position && <div className="em-error">{formErrors.position}</div>}
 
                   <label className="em-input-label">แผนก</label>
                   <select name="department" value={form.department} onChange={handleChange} className="em-modal-select" required>
                     <option value="">เลือกแผนก</option>
-                    {departments.map(d => <option key={d} value={d}>{d}</option>)}
+                    {deptOptions.filter(d => d.isActive === 1).map(d => (
+                      <option key={d.departmentId} value={d.departmentId}>{d.name} ({d.departmentId})</option>
+                    ))}
                   </select>
                   {formErrors.department && <div className="em-error">{formErrors.department}</div>}
+
+                  <label className="em-input-label">สิทธิ์ระบบ</label>
+                  <select name="systemPermis" value={form.systemPermis} onChange={handleChange} className="em-modal-select" required>
+                    <option value="U">ผู้ใช้งาน (User)</option>
+                    <option value="A">ผู้ดูแลระบบ (Admin)</option>
+                  </select>
+                  {formErrors.systemPermis && <div className="em-error">{formErrors.systemPermis}</div>}
+
+                  <label className="em-input-label">สถานะ</label>
+                  <select name="isActive" value={form.isActive} onChange={handleChange} className="em-modal-select" required>
+                    <option value={1}>ใช้งาน</option>
+                    <option value={0}>ไม่ใช้งาน</option>
+                  </select>
+                  {formErrors.isActive && <div className="em-error">{formErrors.isActive}</div>}
 
                   {/* additional phones can be edited below if present */}
                 </div>
@@ -309,7 +546,7 @@ function EmployeeManager() {
 
               <div className="em-modal-btns">
                 <button type="submit" className="em-modal-btn">{editingId ? 'บันทึก' : 'เพิ่ม'}</button>
-                <button type="button" onClick={() => { setShowForm(false); setEditingId(null); setForm({ username: '', password: '', name: '', position: '', department: '' }); }} className="em-modal-btn cancel">ยกเลิก</button>
+                <button type="button" onClick={() => { setShowForm(false); setEditingId(null); setForm({ personId: '', username: '', password: '', name: '', position: '', department: '', systemPermis: 'U', isActive: 1 }); }} className="em-modal-btn cancel">ยกเลิก</button>
               </div>
             </form>
           </div>
@@ -322,12 +559,27 @@ function EmployeeManager() {
               <div className="em-modal-title">ข้อมูลบุคคล</div>
               <div className="em-modal-grid">
                 <div className="em-modal-col">
+                  <div><b>PERSONID:</b> {detailEmp.personId || detailEmp.id || '-'}</div>
                   <div><b>Username:</b> {detailEmp.username}</div>
                   <div><b>ชื่อ:</b> {detailEmp.name}</div>
                 </div>
                 <div className="em-modal-col">
-                  <div><b>ตำแหน่ง:</b> {detailEmp.position}</div>
-                  <div><b>แผนก:</b> {detailEmp.department}</div>
+                  <div><b>ตำแหน่ง:</b> {getRankNameById(detailEmp.position, detailEmp.rankName)}</div>
+                  <div><b>แผนก:</b> {getDeptNameById(detailEmp.department, detailEmp.departmentName)}</div>
+                  <div><b>สิทธิ์ระบบ:</b> {detailEmp.systemPermis === 'A' ? 'Admin' : 'User'}</div>
+                  <div>
+                    <b>สถานะ:</b> {' '}
+                    <span style={{
+                      background: detailEmp.isActive === 1 ? '#2e7d32' : '#c62828',
+                      color: 'white',
+                      padding: '2px 8px',
+                      borderRadius: '12px',
+                      fontSize: '12px',
+                      fontWeight: 'bold'
+                    }}>
+                      {detailEmp.isActive === 1 ? 'ใช้งาน' : 'ไม่ใช้งาน'}
+                    </span>
+                  </div>
                   <div><b>รหัสผ่าน:</b> {detailEmp.password}</div>
                 </div>
               </div>
